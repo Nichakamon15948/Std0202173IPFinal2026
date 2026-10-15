@@ -25,6 +25,7 @@ export default function App() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   // Dashboard States
   const [employees, setEmployees] = useState([]);
@@ -55,6 +56,12 @@ export default function App() {
       fetchEmployees();
     }
   }, [currentScreen]);
+
+  // Quick auto-fill credentials for demo
+  const handleAutoFill = () => {
+    setUsername('admin');
+    setPassword('123');
+  };
 
   // ==========================================
   // 1. Authentication
@@ -118,10 +125,7 @@ export default function App() {
 
   // Filtered employees
   const filteredEmployees = employees.filter(emp => {
-    // Status filter
     if (statusFilter !== 'ALL' && emp.status !== statusFilter) return false;
-
-    // Search query filter
     if (!searchQuery.trim()) return true;
     const q = searchQuery.toLowerCase().trim();
     return (
@@ -178,7 +182,6 @@ export default function App() {
     }
   };
 
-  // Quick fill position
   const setQuickPosition = (pos) => {
     setNewPosition(pos);
   };
@@ -341,7 +344,6 @@ export default function App() {
     return isNaN(num) ? '0' : num.toLocaleString();
   };
 
-  // Get Initials for avatar
   const getInitials = (name) => {
     if (!name) return '??';
     const parts = name.trim().split(' ');
@@ -351,7 +353,6 @@ export default function App() {
     return name.slice(0, 2).toUpperCase();
   };
 
-  // Tier color styling
   const getTierTheme = (tierName) => {
     if (tierName === 'Tier 1') {
       return {
@@ -381,48 +382,74 @@ export default function App() {
   };
 
   // ==========================================
-  // RENDER: Login Screen
+  // RENDER: Ultra-Modern Login Screen
   // ==========================================
   if (currentScreen === 'login') {
     return (
       <SafeAreaView style={styles.loginContainer}>
         <StatusBar barStyle="light-content" />
         <View style={styles.loginCard}>
+          {/* Logo & Header */}
           <View style={styles.loginHeader}>
             <View style={styles.logoBadge}>
               <Text style={styles.logoBadgeText}>HR</Text>
             </View>
-            <Text style={styles.loginTitle}>HR Portal Login</Text>
+            <Text style={styles.loginTitle}>HR Analytics Portal</Text>
             <Text style={styles.loginSubtitle}>
-              Final Exam 2026: Salary Analytics System
+              Final Exam: Internet Programming (2026)
             </Text>
+            <View style={styles.creatorPill}>
+              <Text style={styles.creatorPillText}>
+                🎓 Developed by <Text style={{ color: '#38bdf8', fontWeight: '800' }}>Nichakamon (6730202173)</Text>
+              </Text>
+            </View>
           </View>
 
+          {/* Username Input */}
           <View style={styles.inputGroup}>
             <Text style={styles.inputLabel}>USERNAME</Text>
-            <TextInput
-              style={styles.textInput}
-              placeholder="e.g. admin"
-              placeholderTextColor="#64748b"
-              value={username}
-              onChangeText={setUsername}
-              autoCapitalize="none"
-            />
+            <View style={styles.inputWrapper}>
+              <Text style={styles.inputIcon}>👤</Text>
+              <TextInput
+                style={styles.textInputWithIcon}
+                placeholder="admin"
+                placeholderTextColor="#64748b"
+                value={username}
+                onChangeText={setUsername}
+                autoCapitalize="none"
+              />
+            </View>
           </View>
 
+          {/* Password Input */}
           <View style={styles.inputGroup}>
             <Text style={styles.inputLabel}>PASSWORD</Text>
-            <TextInput
-              style={styles.textInput}
-              placeholder="e.g. 123 หรือ password123"
-              placeholderTextColor="#64748b"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-              autoCapitalize="none"
-            />
+            <View style={styles.inputWrapper}>
+              <Text style={styles.inputIcon}>🔒</Text>
+              <TextInput
+                style={styles.textInputWithIcon}
+                placeholder="123 หรือ password123"
+                placeholderTextColor="#64748b"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry={!showPassword}
+                autoCapitalize="none"
+              />
+              <TouchableOpacity
+                onPress={() => setShowPassword(!showPassword)}
+                style={styles.eyeIconBtn}
+              >
+                <Text style={styles.eyeIconText}>{showPassword ? '👁️' : '👁️‍🗨️'}</Text>
+              </TouchableOpacity>
+            </View>
           </View>
 
+          {/* Quick Auto-fill button */}
+          <TouchableOpacity style={styles.autoFillButton} onPress={handleAutoFill}>
+            <Text style={styles.autoFillText}>⚡ Quick Auto-Fill (admin / 123)</Text>
+          </TouchableOpacity>
+
+          {/* Sign In Button */}
           <TouchableOpacity
             style={[styles.primaryButton, isLoggingIn && styles.buttonDisabled]}
             onPress={handleLogin}
@@ -435,9 +462,14 @@ export default function App() {
             )}
           </TouchableOpacity>
 
+          {/* Credentials Card */}
           <View style={styles.hintBox}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginBottom: 4 }}>
+              <View style={styles.onlineDot} />
+              <Text style={styles.onlineText}>Backend Connected (Port 5000)</Text>
+            </View>
             <Text style={styles.hintText}>
-              🔑 <Text style={{ fontWeight: 'bold' }}>Credentials:</Text> admin / 123 (หรือ password123)
+              🔑 <Text style={{ fontWeight: 'bold' }}>Default Admin:</Text> admin / 123 (หรือ password123)
             </Text>
           </View>
         </View>
@@ -550,7 +582,6 @@ export default function App() {
           </View>
 
           <View style={styles.formRow}>
-            {/* Name */}
             <View style={styles.formField}>
               <Text style={styles.formFieldLabel}>FULL NAME *</Text>
               <TextInput
@@ -562,7 +593,6 @@ export default function App() {
               />
             </View>
 
-            {/* Position */}
             <View style={styles.formField}>
               <Text style={styles.formFieldLabel}>POSITION / ROLE *</Text>
               <TextInput
@@ -574,7 +604,6 @@ export default function App() {
               />
             </View>
 
-            {/* Salary */}
             <View style={styles.formField}>
               <Text style={styles.formFieldLabel}>BASE SALARY (฿) *</Text>
               <TextInput
@@ -896,7 +925,7 @@ export default function App() {
 // MODERN STYLES
 // ==========================================
 const styles = StyleSheet.create({
-  // Login Styles
+  // Modern Login Styles
   loginContainer: {
     flex: 1,
     backgroundColor: '#0a0f1d',
@@ -906,35 +935,35 @@ const styles = StyleSheet.create({
   },
   loginCard: {
     backgroundColor: '#111827',
-    borderRadius: 20,
-    padding: 32,
+    borderRadius: 24,
+    padding: 34,
     width: '100%',
     maxWidth: 440,
     borderWidth: 1,
     borderColor: '#1f2937',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 20 },
-    shadowOpacity: 0.5,
-    shadowRadius: 30
+    shadowOffset: { width: 0, height: 24 },
+    shadowOpacity: 0.6,
+    shadowRadius: 36
   },
   loginHeader: {
     alignItems: 'center',
-    marginBottom: 26
+    marginBottom: 24
   },
   logoBadge: {
-    width: 52,
-    height: 52,
-    borderRadius: 14,
+    width: 56,
+    height: 56,
+    borderRadius: 16,
     backgroundColor: '#2563eb',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 14,
     shadowColor: '#2563eb',
-    shadowOpacity: 0.5,
-    shadowRadius: 10
+    shadowOpacity: 0.6,
+    shadowRadius: 14
   },
   logoBadgeText: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: '900',
     color: '#ffffff'
   },
@@ -949,35 +978,72 @@ const styles = StyleSheet.create({
     color: '#94a3b8',
     textAlign: 'center'
   },
+  creatorPill: {
+    backgroundColor: 'rgba(56, 189, 248, 0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(56, 189, 248, 0.3)',
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 20,
+    marginTop: 10
+  },
+  creatorPillText: {
+    fontSize: 11,
+    color: '#cbd5e1'
+  },
   inputGroup: {
-    marginBottom: 18
+    marginBottom: 16
   },
   inputLabel: {
     fontSize: 11,
     fontWeight: '800',
     color: '#cbd5e1',
     letterSpacing: 1,
-    marginBottom: 8
+    marginBottom: 7
   },
-  textInput: {
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: '#030712',
     borderWidth: 1,
     borderColor: '#374151',
-    borderRadius: 10,
-    paddingHorizontal: 16,
+    borderRadius: 12,
+    paddingHorizontal: 14
+  },
+  inputIcon: {
+    fontSize: 14,
+    marginRight: 10
+  },
+  textInputWithIcon: {
+    flex: 1,
     paddingVertical: 13,
     fontSize: 14,
     color: '#f8fafc'
+  },
+  eyeIconBtn: {
+    padding: 6
+  },
+  eyeIconText: {
+    fontSize: 15
+  },
+  autoFillButton: {
+    alignSelf: 'flex-end',
+    marginBottom: 14,
+    paddingVertical: 4
+  },
+  autoFillText: {
+    color: '#38bdf8',
+    fontSize: 12,
+    fontWeight: '700'
   },
   primaryButton: {
     backgroundColor: '#2563eb',
     borderRadius: 12,
     paddingVertical: 14,
     alignItems: 'center',
-    marginTop: 10,
     shadowColor: '#2563eb',
-    shadowOpacity: 0.4,
-    shadowRadius: 12
+    shadowOpacity: 0.5,
+    shadowRadius: 14
   },
   primaryButtonText: {
     color: '#ffffff',
@@ -988,12 +1054,23 @@ const styles = StyleSheet.create({
     opacity: 0.6
   },
   hintBox: {
-    marginTop: 24,
-    padding: 12,
+    marginTop: 22,
+    padding: 14,
     backgroundColor: 'rgba(30, 58, 138, 0.2)',
-    borderRadius: 10,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: 'rgba(59, 130, 246, 0.3)'
+  },
+  onlineDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#10b981'
+  },
+  onlineText: {
+    color: '#34d399',
+    fontSize: 11,
+    fontWeight: '700'
   },
   hintText: {
     color: '#93c5fd',
