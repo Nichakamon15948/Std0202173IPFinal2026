@@ -732,11 +732,6 @@ export default function App() {
 
                     <View style={styles.employeeInfo}>
                       <View style={styles.nameRow}>
-                        {/* ID Badge displayed clearly */}
-                        <View style={styles.idBadge}>
-                          <Text style={styles.idBadgeText}>#{emp.id}</Text>
-                        </View>
-
                         <Text style={styles.employeeName}>{emp.name}</Text>
 
                         {isOwner && (
