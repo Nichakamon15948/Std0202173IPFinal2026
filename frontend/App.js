@@ -388,7 +388,7 @@ export default function App() {
 
           <View style={styles.hintBox}>
             <Text style={styles.hintText}>
-              💡 <Text style={{ fontWeight: 'bold' }}>Credentials:</Text> admin / password123
+              💡 <Text style={{ fontWeight: 'bold' }}>Credentials:</Text> admin / 123 (หรือ password123)
             </Text>
           </View>
         </View>
