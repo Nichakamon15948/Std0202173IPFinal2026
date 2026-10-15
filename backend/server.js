@@ -14,48 +14,55 @@ app.use(express.json());
 let employees = [
   {
     id: "1",
+    name: "Nichakamon",
+    position: "HR Manager",
+    status: "Active",
+    salary: 55000
+  },
+  {
+    id: "2",
     name: "John Doe",
     position: "Software Engineer",
     status: "Active",
     salary: 45000
   },
   {
-    id: "2",
+    id: "3",
     name: "Jane Smith",
     position: "HR Specialist",
     status: "Active",
     salary: 32000
   },
   {
-    id: "3",
+    id: "4",
     name: "Michael Brown",
     position: "Senior System Architect",
     status: "Active",
     salary: 85000
   },
   {
-    id: "4",
+    id: "5",
     name: "Emily Davis",
     position: "Junior Frontend Developer",
     status: "On Leave",
     salary: 22000
   },
   {
-    id: "5",
+    id: "6",
     name: "David Wilson",
     position: "DevOps Engineer",
     status: "Active",
     salary: 52000
   },
   {
-    id: "6",
+    id: "7",
     name: "Sarah Connor",
     position: "Engineering Director",
     status: "Active",
     salary: 95000
   },
   {
-    id: "7",
+    id: "8",
     name: "Peter Parker",
     position: "Intern",
     status: "On Leave",
@@ -64,7 +71,7 @@ let employees = [
 ];
 
 // Helper to auto-increment ID
-let nextId = 8;
+let nextId = 9;
 
 // ==========================================
 // 1.1 Authentication (Login) Endpoint
@@ -87,11 +94,22 @@ app.post('/api/login', (req, res) => {
 });
 
 // ==========================================
-// 1.1 CRUD API Endpoints
+// 1.1 CRUD API Endpoints (ค้นหา / เพิ่ม / แก้ไข / ลบ)
 // ==========================================
 
-// [GET] /api/employees - Return all employee records
+// [GET] /api/employees - Return all employee records (supports ?q= or ?search=)
 app.get('/api/employees', (req, res) => {
+  const { q, search } = req.query;
+  const keyword = (q || search || '').toLowerCase().trim();
+  if (keyword) {
+    const filtered = employees.filter(emp =>
+      emp.name.toLowerCase().includes(keyword) ||
+      emp.position.toLowerCase().includes(keyword) ||
+      emp.status.toLowerCase().includes(keyword) ||
+      String(emp.salary).includes(keyword)
+    );
+    return res.status(200).json(filtered);
+  }
   res.status(200).json(employees);
 });
 
@@ -137,6 +155,31 @@ app.post('/api/employees', (req, res) => {
     success: true,
     message: "Employee added successfully",
     employee: newEmployee
+  });
+});
+
+// [PUT] /api/employees/:id - Edit employee details (แก้ไขข้อมูลพนักงาน)
+app.put('/api/employees/:id', (req, res) => {
+  const { id } = req.params;
+  const { name, position, salary, status } = req.body || {};
+  const employee = employees.find(emp => emp.id === String(id));
+
+  if (!employee) {
+    return res.status(404).json({
+      success: false,
+      error: `Employee with ID ${id} not found.`
+    });
+  }
+
+  if (name && String(name).trim()) employee.name = String(name).trim();
+  if (position && String(position).trim()) employee.position = String(position).trim();
+  if (salary !== undefined && !isNaN(Number(salary))) employee.salary = Number(salary);
+  if (status && (status === 'Active' || status === 'On Leave')) employee.status = status;
+
+  res.status(200).json({
+    success: true,
+    message: "Employee updated successfully",
+    employee
   });
 });
 

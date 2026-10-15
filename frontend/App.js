@@ -10,7 +10,8 @@ import {
   Alert,
   Platform,
   SafeAreaView,
-  StatusBar
+  StatusBar,
+  Modal
 } from 'react-native';
 
 // API Base URL (Backend runs on port 5000)
@@ -29,12 +30,21 @@ export default function App() {
   // Dashboard States
   const [employees, setEmployees] = useState([]);
   const [isLoadingEmployees, setIsLoadingEmployees] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Add Employee Form States
   const [newName, setNewName] = useState('');
   const [newPosition, setNewPosition] = useState('');
   const [newSalary, setNewSalary] = useState('');
   const [isAdding, setIsAdding] = useState(false);
+
+  // Edit Employee Modal States
+  const [editingEmployee, setEditingEmployee] = useState(null);
+  const [editName, setEditName] = useState('');
+  const [editPosition, setEditPosition] = useState('');
+  const [editSalary, setEditSalary] = useState('');
+  const [editStatus, setEditStatus] = useState('Active');
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
 
   // Phase 2: K-Means Salary Analytics States
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -51,7 +61,6 @@ export default function App() {
   // 1. Authentication (Login)
   // ==========================================
   const handleLogin = async () => {
-    // Client-side validation
     if (!username.trim() || !password.trim()) {
       showAlert('Login Error', 'Please enter both username and password.');
       return;
@@ -70,7 +79,6 @@ export default function App() {
       if (response.ok && data.success) {
         setAuthToken(data.token);
         setCurrentScreen('dashboard');
-        // Clear login fields
         setUsername('');
         setPassword('');
       } else {
@@ -91,7 +99,7 @@ export default function App() {
   };
 
   // ==========================================
-  // 2. Fetch Employee Records (Read)
+  // 2. Fetch Employee Records (Read & Search)
   // ==========================================
   const fetchEmployees = async () => {
     setIsLoadingEmployees(true);
@@ -109,11 +117,22 @@ export default function App() {
     }
   };
 
+  // Filtered employees for instant client-side search
+  const filteredEmployees = employees.filter(emp => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase().trim();
+    return (
+      (emp.name && emp.name.toLowerCase().includes(q)) ||
+      (emp.position && emp.position.toLowerCase().includes(q)) ||
+      (emp.status && emp.status.toLowerCase().includes(q)) ||
+      String(emp.salary).includes(q)
+    );
+  });
+
   // ==========================================
   // 3. Add Employee (Create)
   // ==========================================
   const handleAddEmployee = async () => {
-    // Client-side validation: Prevent submission if any field is empty
     if (!newName.trim() || !newPosition.trim() || !newSalary.trim()) {
       showAlert('Validation Error', 'All fields (Name, Position, Salary) are required!');
       return;
@@ -140,11 +159,9 @@ export default function App() {
       const data = await response.json();
 
       if (response.ok && data.success) {
-        // Clear inputs
         setNewName('');
         setNewPosition('');
         setNewSalary('');
-        // Refresh employee list
         fetchEmployees();
         showAlert('Success', 'Employee added successfully!');
       } else {
@@ -159,7 +176,66 @@ export default function App() {
   };
 
   // ==========================================
-  // 4. Toggle Status (Update)
+  // 4. Edit Employee (Update)
+  // ==========================================
+  const openEditModal = (emp) => {
+    setEditingEmployee(emp);
+    setEditName(emp.name || '');
+    setEditPosition(emp.position || '');
+    setEditSalary(String(emp.salary || ''));
+    setEditStatus(emp.status || 'Active');
+  };
+
+  const closeEditModal = () => {
+    setEditingEmployee(null);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editName.trim() || !editPosition.trim() || !editSalary.trim()) {
+      showAlert('Validation Error', 'All fields (Name, Position, Salary) are required!');
+      return;
+    }
+
+    const numericSalary = Number(editSalary.trim());
+    if (isNaN(numericSalary) || numericSalary <= 0) {
+      showAlert('Validation Error', 'Salary must be a positive number.');
+      return;
+    }
+
+    setIsSavingEdit(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/employees/${editingEmployee.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: editName.trim(),
+          position: editPosition.trim(),
+          salary: numericSalary,
+          status: editStatus
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        setEmployees(prev =>
+          prev.map(emp => (emp.id === editingEmployee.id ? data.employee : emp))
+        );
+        closeEditModal();
+        showAlert('Success', 'Employee updated successfully!');
+      } else {
+        showAlert('Error', data.error || 'Failed to update employee.');
+      }
+    } catch (error) {
+      console.error('Save edit error:', error);
+      showAlert('Error', 'Network error while updating employee.');
+    } finally {
+      setIsSavingEdit(false);
+    }
+  };
+
+  // ==========================================
+  // 5. Toggle Status (Update Status)
   // ==========================================
   const handleToggleStatus = async (id) => {
     try {
@@ -169,7 +245,6 @@ export default function App() {
       const data = await response.json();
 
       if (response.ok && data.success) {
-        // Update local state smoothly
         setEmployees(prev =>
           prev.map(emp => (emp.id === id ? data.employee : emp))
         );
@@ -183,10 +258,9 @@ export default function App() {
   };
 
   // ==========================================
-  // 5. Delete Employee with Confirmation Alert
+  // 6. Delete Employee with Confirmation Alert
   // ==========================================
   const confirmDelete = (id, name) => {
-    // Cross-platform Confirmation Dialog
     if (Platform.OS === 'web') {
       const confirmed = window.confirm(`Are you sure you want to delete ${name}?`);
       if (confirmed) {
@@ -212,7 +286,6 @@ export default function App() {
       const data = await response.json();
 
       if (response.ok && data.success) {
-        // Remove from state immediately
         setEmployees(prev => prev.filter(emp => emp.id !== id));
         showAlert('Success', 'Employee deleted successfully.');
       } else {
@@ -225,7 +298,7 @@ export default function App() {
   };
 
   // ==========================================
-  // 6. Phase 2: K-Means Salary Analytics
+  // 7. Phase 2: K-Means Salary Analytics
   // ==========================================
   const handleAnalyzeSalary = async () => {
     setIsAnalyzing(true);
@@ -247,7 +320,7 @@ export default function App() {
     }
   };
 
-  // Helper alert that works smoothly on Web and Mobile
+  // Helper alert
   const showAlert = (title, message) => {
     if (Platform.OS === 'web') {
       window.alert(`${title}: ${message}`);
@@ -256,7 +329,7 @@ export default function App() {
     }
   };
 
-  // Format currency with commas
+  // Format currency
   const formatMoney = (val) => {
     const num = Number(val);
     return isNaN(num) ? '0' : num.toLocaleString();
@@ -334,7 +407,9 @@ export default function App() {
       <View style={styles.headerBar}>
         <View>
           <Text style={styles.headerTitle}>HR Manager & Salary Analytics</Text>
-          <Text style={styles.headerSubtitle}>Student ID: 6730202173</Text>
+          <Text style={styles.headerSubtitle}>
+            👤 Nichakamon | Student ID: 6730202173
+          </Text>
         </View>
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
           <Text style={styles.logoutButtonText}>Log Out</Text>
@@ -385,7 +460,7 @@ export default function App() {
 
         {/* Phase 1: Add Employee Form */}
         <View style={styles.formSection}>
-          <Text style={styles.sectionTitle}>➕ Add New Employee</Text>
+          <Text style={styles.sectionTitle}>➕ Add New Employee (เพิ่มพนักงาน)</Text>
           <View style={styles.formRow}>
             <View style={styles.formField}>
               <Text style={styles.formFieldLabel}>NAME</Text>
@@ -435,27 +510,51 @@ export default function App() {
           </TouchableOpacity>
         </View>
 
-        {/* Phase 1: Employee Records List */}
+        {/* Phase 1: Employee Directory with Search Bar (ค้นหา) */}
         <View style={styles.listSection}>
           <View style={styles.sectionHeaderRow}>
             <Text style={styles.sectionTitle}>
-              👥 Employee Directory ({employees.length})
+              👥 Employee Directory ({filteredEmployees.length}/{employees.length})
             </Text>
             <TouchableOpacity onPress={fetchEmployees}>
               <Text style={styles.refreshLink}>🔄 Refresh</Text>
             </TouchableOpacity>
           </View>
 
+          {/* Search Bar Input */}
+          <View style={styles.searchBarContainer}>
+            <Text style={styles.searchIcon}>🔍</Text>
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search by name, position, status, or salary..."
+              placeholderTextColor="#94a3b8"
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+            />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity onPress={() => setSearchQuery('')} style={styles.clearSearchBtn}>
+                <Text style={styles.clearSearchText}>✕</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+
           {isLoadingEmployees ? (
             <ActivityIndicator size="large" color="#3b82f6" style={{ marginVertical: 30 }} />
-          ) : employees.length === 0 ? (
-            <Text style={styles.emptyText}>No employees found. Add one above!</Text>
+          ) : filteredEmployees.length === 0 ? (
+            <Text style={styles.emptyText}>
+              {searchQuery ? `No employees matching "${searchQuery}"` : 'No employees found.'}
+            </Text>
           ) : (
-            employees.map(emp => (
+            filteredEmployees.map(emp => (
               <View key={emp.id} style={styles.employeeCard}>
                 <View style={styles.employeeInfo}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                     <Text style={styles.employeeName}>{emp.name}</Text>
+                    {emp.name.includes('Nichakamon') && (
+                      <View style={styles.ownerBadge}>
+                        <Text style={styles.ownerBadgeText}>★ Student</Text>
+                      </View>
+                    )}
                     <View
                       style={[
                         styles.statusBadge,
@@ -480,8 +579,17 @@ export default function App() {
                   </Text>
                 </View>
 
-                {/* Actions: Toggle Status & Delete */}
+                {/* Actions: Edit, Toggle Status & Delete */}
                 <View style={styles.actionRow}>
+                  {/* Edit Button */}
+                  <TouchableOpacity
+                    style={styles.editButton}
+                    onPress={() => openEditModal(emp)}
+                  >
+                    <Text style={styles.editButtonText}>✏️ Edit</Text>
+                  </TouchableOpacity>
+
+                  {/* Toggle Status Button */}
                   <TouchableOpacity
                     style={styles.toggleButton}
                     onPress={() => handleToggleStatus(emp.id)}
@@ -489,6 +597,7 @@ export default function App() {
                     <Text style={styles.toggleButtonText}>Toggle Status</Text>
                   </TouchableOpacity>
 
+                  {/* Delete Button */}
                   <TouchableOpacity
                     style={styles.deleteButton}
                     onPress={() => confirmDelete(emp.id, emp.name)}
@@ -501,6 +610,106 @@ export default function App() {
           )}
         </View>
       </ScrollView>
+
+      {/* Edit Employee Modal (แก้ไขพนักงาน) */}
+      <Modal
+        visible={editingEmployee !== null}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={closeEditModal}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>✏️ Edit Employee (แก้ไขข้อมูล)</Text>
+            <Text style={styles.modalSubtitle}>Editing ID: {editingEmployee?.id}</Text>
+
+            <View style={styles.modalField}>
+              <Text style={styles.modalLabel}>NAME</Text>
+              <TextInput
+                style={styles.modalInput}
+                value={editName}
+                onChangeText={setEditName}
+                placeholder="Full Name"
+                placeholderTextColor="#94a3b8"
+              />
+            </View>
+
+            <View style={styles.modalField}>
+              <Text style={styles.modalLabel}>POSITION</Text>
+              <TextInput
+                style={styles.modalInput}
+                value={editPosition}
+                onChangeText={setEditPosition}
+                placeholder="Position"
+                placeholderTextColor="#94a3b8"
+              />
+            </View>
+
+            <View style={styles.modalField}>
+              <Text style={styles.modalLabel}>SALARY (฿)</Text>
+              <TextInput
+                style={styles.modalInput}
+                value={editSalary}
+                onChangeText={setEditSalary}
+                placeholder="Salary"
+                placeholderTextColor="#94a3b8"
+                keyboardType="numeric"
+              />
+            </View>
+
+            <View style={styles.modalField}>
+              <Text style={styles.modalLabel}>STATUS</Text>
+              <View style={{ flexDirection: 'row', gap: 10, marginTop: 4 }}>
+                <TouchableOpacity
+                  style={[
+                    styles.statusChoiceBtn,
+                    editStatus === 'Active' && styles.statusChoiceActive
+                  ]}
+                  onPress={() => setEditStatus('Active')}
+                >
+                  <Text style={[styles.statusChoiceText, editStatus === 'Active' && styles.statusChoiceTextActive]}>
+                    ✓ Active
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.statusChoiceBtn,
+                    editStatus === 'On Leave' && styles.statusChoiceLeave
+                  ]}
+                  onPress={() => setEditStatus('On Leave')}
+                >
+                  <Text style={[styles.statusChoiceText, editStatus === 'On Leave' && styles.statusChoiceTextLeave]}>
+                    ⏸ On Leave
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={styles.modalCancelBtn}
+                onPress={closeEditModal}
+                disabled={isSavingEdit}
+              >
+                <Text style={styles.modalCancelText}>Cancel</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.modalSaveBtn, isSavingEdit && styles.buttonDisabled]}
+                onPress={handleSaveEdit}
+                disabled={isSavingEdit}
+              >
+                {isSavingEdit ? (
+                  <ActivityIndicator color="#ffffff" />
+                ) : (
+                  <Text style={styles.modalSaveText}>Save Changes</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -764,6 +973,36 @@ const styles = StyleSheet.create({
     fontSize: 14
   },
 
+  // Search Bar
+  searchBarContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#0f172a',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#334155',
+    paddingHorizontal: 12,
+    marginBottom: 14
+  },
+  searchIcon: {
+    fontSize: 14,
+    marginRight: 8
+  },
+  searchInput: {
+    flex: 1,
+    paddingVertical: 10,
+    color: '#f8fafc',
+    fontSize: 13
+  },
+  clearSearchBtn: {
+    padding: 6
+  },
+  clearSearchText: {
+    color: '#94a3b8',
+    fontSize: 13,
+    fontWeight: '700'
+  },
+
   // Employee List Section
   listSection: {
     backgroundColor: '#1e293b',
@@ -805,6 +1044,17 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '800'
   },
+  ownerBadge: {
+    backgroundColor: '#f59e0b',
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 6
+  },
+  ownerBadgeText: {
+    color: '#0f172a',
+    fontSize: 10,
+    fontWeight: '900'
+  },
   employeePosition: {
     color: '#94a3b8',
     fontSize: 13,
@@ -841,6 +1091,17 @@ const styles = StyleSheet.create({
     gap: 8,
     alignItems: 'center'
   },
+  editButton: {
+    backgroundColor: '#d97706',
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 6
+  },
+  editButtonText: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: '600'
+  },
   toggleButton: {
     backgroundColor: '#3b82f6',
     paddingHorizontal: 12,
@@ -862,5 +1123,109 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 12,
     fontWeight: '600'
+  },
+
+  // Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20
+  },
+  modalContent: {
+    backgroundColor: '#1e293b',
+    borderRadius: 16,
+    padding: 24,
+    width: '100%',
+    maxWidth: 460,
+    borderWidth: 1,
+    borderColor: '#334155'
+  },
+  modalTitle: {
+    color: '#f8fafc',
+    fontSize: 18,
+    fontWeight: '900'
+  },
+  modalSubtitle: {
+    color: '#38bdf8',
+    fontSize: 12,
+    marginTop: 2,
+    marginBottom: 16
+  },
+  modalField: {
+    marginBottom: 14
+  },
+  modalLabel: {
+    color: '#cbd5e1',
+    fontSize: 11,
+    fontWeight: '700',
+    marginBottom: 6
+  },
+  modalInput: {
+    backgroundColor: '#0f172a',
+    borderWidth: 1,
+    borderColor: '#334155',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 14,
+    color: '#f8fafc'
+  },
+  statusChoiceBtn: {
+    flex: 1,
+    paddingVertical: 8,
+    borderRadius: 6,
+    backgroundColor: '#0f172a',
+    borderWidth: 1,
+    borderColor: '#334155',
+    alignItems: 'center'
+  },
+  statusChoiceActive: {
+    backgroundColor: 'rgba(16, 185, 129, 0.25)',
+    borderColor: '#10b981'
+  },
+  statusChoiceLeave: {
+    backgroundColor: 'rgba(245, 158, 11, 0.25)',
+    borderColor: '#f59e0b'
+  },
+  statusChoiceText: {
+    color: '#94a3b8',
+    fontSize: 12,
+    fontWeight: '700'
+  },
+  statusChoiceTextActive: {
+    color: '#34d399'
+  },
+  statusChoiceTextLeave: {
+    color: '#fbbf24'
+  },
+  modalActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 10,
+    marginTop: 18
+  },
+  modalCancelBtn: {
+    backgroundColor: '#334155',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8
+  },
+  modalCancelText: {
+    color: '#f8fafc',
+    fontSize: 13,
+    fontWeight: '600'
+  },
+  modalSaveBtn: {
+    backgroundColor: '#2563eb',
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderRadius: 8
+  },
+  modalSaveText: {
+    color: '#ffffff',
+    fontSize: 13,
+    fontWeight: '700'
   }
 });
