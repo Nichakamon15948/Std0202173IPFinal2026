@@ -25,7 +25,7 @@ let memoryEmployees = [
 let nextMemoryId = 9;
 
 // ==========================================
-// MySQL Database Pool Setup
+// MySQL Database Pool Setup with NicTap_ Fields
 // ==========================================
 let dbPool = null;
 let useDatabase = false;
@@ -43,31 +43,30 @@ async function initDatabase() {
       connectTimeout: 3000
     });
 
-    // Test connection
     const conn = await pool.getConnection();
     console.log('Connected to MySQL Database (ip_std6730202173) successfully!');
 
-    // Ensure table exists
+    // Ensure table with NicTap_ fields exists
     await conn.execute(`
-      CREATE TABLE IF NOT EXISTS employees (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        name VARCHAR(255) NOT NULL,
-        position VARCHAR(255) NOT NULL,
-        status VARCHAR(50) DEFAULT 'Active',
-        salary INT NOT NULL
+      CREATE TABLE IF NOT EXISTS NicTap_employees (
+        NicTap_id INT AUTO_INCREMENT PRIMARY KEY,
+        NicTap_name VARCHAR(255) NOT NULL,
+        NicTap_position VARCHAR(255) NOT NULL,
+        NicTap_status VARCHAR(50) DEFAULT 'Active',
+        NicTap_salary INT NOT NULL
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     `);
 
     // Ensure initial rows exist
-    const [rows] = await conn.execute('SELECT COUNT(*) as count FROM employees');
+    const [rows] = await conn.execute('SELECT COUNT(*) as count FROM NicTap_employees');
     if (rows[0].count === 0) {
       for (const emp of memoryEmployees) {
         await conn.execute(
-          'INSERT INTO employees (name, position, status, salary) VALUES (?, ?, ?, ?)',
+          'INSERT INTO NicTap_employees (NicTap_name, NicTap_position, NicTap_status, NicTap_salary) VALUES (?, ?, ?, ?)',
           [emp.name, emp.position, emp.status, emp.salary]
         );
       }
-      console.log('Seeded employees table in MySQL!');
+      console.log('Seeded NicTap_employees table in MySQL!');
     }
 
     conn.release();
@@ -87,7 +86,7 @@ initDatabase();
 app.post('/api/login', (req, res) => {
   const { username, password } = req.body || {};
 
-  // Check credentials: allow 'admin' / '123' or 'password123'
+  // Check credentials: allow 'admin' with '123' or 'password123'
   if (username === 'admin' && (password === 'password123' || password === '123')) {
     return res.status(200).json({
       success: true,
@@ -102,7 +101,7 @@ app.post('/api/login', (req, res) => {
 });
 
 // ==========================================
-// 1.1 CRUD API Endpoints (Database-backed with fallback)
+// 1.1 CRUD API Endpoints (Using NicTap_ fields in DB)
 // ==========================================
 
 // [GET] /api/employees - Return all employee records (supports ?q= or ?search=)
@@ -112,16 +111,24 @@ app.get('/api/employees', async (req, res) => {
 
   if (useDatabase && dbPool) {
     try {
-      let query = 'SELECT id, name, position, status, salary FROM employees';
+      let query = `
+        SELECT 
+          NicTap_id AS id, 
+          NicTap_name AS name, 
+          NicTap_position AS position, 
+          NicTap_status AS status, 
+          NicTap_salary AS salary 
+        FROM NicTap_employees
+      `;
       let params = [];
 
       if (keyword) {
-        query += ' WHERE LOWER(name) LIKE ? OR LOWER(position) LIKE ? OR LOWER(status) LIKE ? OR CAST(salary AS CHAR) LIKE ?';
+        query += ' WHERE LOWER(NicTap_name) LIKE ? OR LOWER(NicTap_position) LIKE ? OR LOWER(NicTap_status) LIKE ? OR CAST(NicTap_salary AS CHAR) LIKE ?';
         const like = `%${keyword}%`;
         params = [like, like, like, like];
       }
 
-      query += ' ORDER BY id ASC';
+      query += ' ORDER BY NicTap_id ASC';
       const [rows] = await dbPool.execute(query, params);
       const formatted = rows.map(r => ({
         ...r,
@@ -181,7 +188,7 @@ app.post('/api/employees', async (req, res) => {
   if (useDatabase && dbPool) {
     try {
       const [result] = await dbPool.execute(
-        'INSERT INTO employees (name, position, status, salary) VALUES (?, ?, "Active", ?)',
+        'INSERT INTO NicTap_employees (NicTap_name, NicTap_position, NicTap_status, NicTap_salary) VALUES (?, ?, "Active", ?)',
         [cleanName, cleanPos, numericSalary]
       );
       const newEmployee = {
@@ -193,7 +200,7 @@ app.post('/api/employees', async (req, res) => {
       };
       return res.status(201).json({
         success: true,
-        message: "Employee added successfully to MySQL database",
+        message: "Employee added successfully to MySQL (NicTap_employees)",
         employee: newEmployee
       });
     } catch (err) {
@@ -225,19 +232,19 @@ app.put('/api/employees/:id', async (req, res) => {
 
   if (useDatabase && dbPool) {
     try {
-      const [check] = await dbPool.execute('SELECT * FROM employees WHERE id = ?', [id]);
+      const [check] = await dbPool.execute('SELECT * FROM NicTap_employees WHERE NicTap_id = ?', [id]);
       if (check.length === 0) {
         return res.status(404).json({ success: false, error: `Employee #${id} not found.` });
       }
 
       const current = check[0];
-      const newName = name ? String(name).trim() : current.name;
-      const newPos = position ? String(position).trim() : current.position;
-      const newSal = salary !== undefined && !isNaN(Number(salary)) ? Number(salary) : current.salary;
-      const newStatus = status === 'Active' || status === 'On Leave' ? status : current.status;
+      const newName = name ? String(name).trim() : current.NicTap_name;
+      const newPos = position ? String(position).trim() : current.NicTap_position;
+      const newSal = salary !== undefined && !isNaN(Number(salary)) ? Number(salary) : current.NicTap_salary;
+      const newStatus = status === 'Active' || status === 'On Leave' ? status : current.NicTap_status;
 
       await dbPool.execute(
-        'UPDATE employees SET name = ?, position = ?, status = ?, salary = ? WHERE id = ?',
+        'UPDATE NicTap_employees SET NicTap_name = ?, NicTap_position = ?, NicTap_status = ?, NicTap_salary = ? WHERE NicTap_id = ?',
         [newName, newPos, newStatus, newSal, id]
       );
 
@@ -271,17 +278,23 @@ app.put('/api/employees/:id/status', async (req, res) => {
 
   if (useDatabase && dbPool) {
     try {
-      const [rows] = await dbPool.execute('SELECT * FROM employees WHERE id = ?', [id]);
+      const [rows] = await dbPool.execute('SELECT * FROM NicTap_employees WHERE NicTap_id = ?', [id]);
       if (rows.length === 0) {
         return res.status(404).json({ success: false, error: `Employee #${id} not found.` });
       }
-      const newStatus = rows[0].status === 'Active' ? 'On Leave' : 'Active';
-      await dbPool.execute('UPDATE employees SET status = ? WHERE id = ?', [newStatus, id]);
+      const newStatus = rows[0].NicTap_status === 'Active' ? 'On Leave' : 'Active';
+      await dbPool.execute('UPDATE NicTap_employees SET NicTap_status = ? WHERE NicTap_id = ?', [newStatus, id]);
 
       return res.status(200).json({
         success: true,
         message: `Status updated to ${newStatus}`,
-        employee: { ...rows[0], id: String(rows[0].id), status: newStatus, salary: Number(rows[0].salary) }
+        employee: {
+          id: String(rows[0].NicTap_id),
+          name: rows[0].NicTap_name,
+          position: rows[0].NicTap_position,
+          status: newStatus,
+          salary: Number(rows[0].NicTap_salary)
+        }
       });
     } catch (err) {
       console.error('Database toggle status error:', err);
@@ -304,14 +317,14 @@ app.delete('/api/employees/:id', async (req, res) => {
 
   if (useDatabase && dbPool) {
     try {
-      const [rows] = await dbPool.execute('SELECT * FROM employees WHERE id = ?', [id]);
+      const [rows] = await dbPool.execute('SELECT * FROM NicTap_employees WHERE NicTap_id = ?', [id]);
       if (rows.length === 0) {
         return res.status(404).json({ success: false, error: `Employee #${id} not found.` });
       }
-      await dbPool.execute('DELETE FROM employees WHERE id = ?', [id]);
+      await dbPool.execute('DELETE FROM NicTap_employees WHERE NicTap_id = ?', [id]);
       return res.status(200).json({
         success: true,
-        message: "Employee deleted successfully from MySQL",
+        message: "Employee deleted successfully from MySQL (NicTap_employees)",
         deletedEmployee: rows[0]
       });
     } catch (err) {
@@ -435,7 +448,7 @@ app.get('/api/employees/salary-clusters', async (req, res) => {
     let salaries = [];
 
     if (useDatabase && dbPool) {
-      const [rows] = await dbPool.execute('SELECT salary FROM employees');
+      const [rows] = await dbPool.execute('SELECT NicTap_salary AS salary FROM NicTap_employees');
       salaries = rows.map(r => Number(r.salary)).filter(s => !isNaN(s) && s > 0);
     } else {
       salaries = memoryEmployees.map(emp => Number(emp.salary)).filter(s => !isNaN(s) && s > 0);
