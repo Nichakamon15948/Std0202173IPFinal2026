@@ -57,7 +57,6 @@ export default function App() {
     }
   }, [currentScreen]);
 
-  // Quick auto-fill credentials for demo
   const handleAutoFill = () => {
     setUsername('admin');
     setPassword('123');
@@ -353,83 +352,81 @@ export default function App() {
     return name.slice(0, 2).toUpperCase();
   };
 
+  // Corporate Tier theme
   const getTierTheme = (tierName) => {
     if (tierName === 'Tier 1') {
       return {
-        badgeBg: 'rgba(16, 185, 129, 0.15)',
-        badgeText: '#34d399',
-        borderColor: '#059669',
-        accentColor: '#10b981',
-        label: 'Entry / Junior Tier'
+        badgeBg: '#ecfdf5',
+        badgeText: '#065f46',
+        accentColor: '#059669',
+        cardBg: '#ffffff',
+        label: 'Entry / Junior Level'
       };
     }
     if (tierName === 'Tier 2') {
       return {
-        badgeBg: 'rgba(59, 130, 246, 0.15)',
-        badgeText: '#60a5fa',
-        borderColor: '#2563eb',
-        accentColor: '#3b82f6',
-        label: 'Mid - Senior Tier'
+        badgeBg: '#eff6ff',
+        badgeText: '#1e40af',
+        accentColor: '#2563eb',
+        cardBg: '#ffffff',
+        label: 'Mid - Professional'
       };
     }
     return {
-      badgeBg: 'rgba(168, 85, 247, 0.15)',
-      badgeText: '#c084fc',
-      borderColor: '#7c3aed',
-      accentColor: '#a855f7',
-      label: 'Lead / Executive Tier'
+      badgeBg: '#f5f3ff',
+      badgeText: '#5b21b6',
+      accentColor: '#7c3aed',
+      cardBg: '#ffffff',
+      label: 'Senior / Executive'
     };
   };
 
   // ==========================================
-  // RENDER: Ultra-Modern Login Screen
+  // RENDER: Clean Corporate Login Screen
   // ==========================================
   if (currentScreen === 'login') {
     return (
       <SafeAreaView style={styles.loginContainer}>
-        <StatusBar barStyle="light-content" />
+        <StatusBar barStyle="dark-content" />
         <View style={styles.loginCard}>
-          {/* Logo & Header */}
+          {/* Company Brand Logo */}
           <View style={styles.loginHeader}>
             <View style={styles.logoBadge}>
               <Text style={styles.logoBadgeText}>HR</Text>
             </View>
-            <Text style={styles.loginTitle}>HR Analytics Portal</Text>
+            <Text style={styles.loginTitle}>HR Management System</Text>
             <Text style={styles.loginSubtitle}>
-              Final Exam: Internet Programming (2026)
+              Employee Administration & Payroll Analytics
             </Text>
-            <View style={styles.creatorPill}>
-              <Text style={styles.creatorPillText}>
-                🎓 Developed by <Text style={{ color: '#38bdf8', fontWeight: '800' }}>Nichakamon (6730202173)</Text>
+            
+            <View style={styles.authorBadge}>
+              <Text style={styles.authorBadgeText}>
+                Student: <Text style={{ fontWeight: '700', color: '#1e3a8a' }}>Nichakamon (6730202173)</Text>
               </Text>
             </View>
           </View>
 
-          {/* Username Input */}
+          {/* Username */}
           <View style={styles.inputGroup}>
             <Text style={styles.inputLabel}>USERNAME</Text>
-            <View style={styles.inputWrapper}>
-              <Text style={styles.inputIcon}>👤</Text>
-              <TextInput
-                style={styles.textInputWithIcon}
-                placeholder="admin"
-                placeholderTextColor="#64748b"
-                value={username}
-                onChangeText={setUsername}
-                autoCapitalize="none"
-              />
-            </View>
+            <TextInput
+              style={styles.textInput}
+              placeholder="e.g. admin"
+              placeholderTextColor="#94a3b8"
+              value={username}
+              onChangeText={setUsername}
+              autoCapitalize="none"
+            />
           </View>
 
-          {/* Password Input */}
+          {/* Password */}
           <View style={styles.inputGroup}>
             <Text style={styles.inputLabel}>PASSWORD</Text>
-            <View style={styles.inputWrapper}>
-              <Text style={styles.inputIcon}>🔒</Text>
+            <View style={styles.passwordWrapper}>
               <TextInput
-                style={styles.textInputWithIcon}
-                placeholder="123 หรือ password123"
-                placeholderTextColor="#64748b"
+                style={styles.passwordInput}
+                placeholder="e.g. 123 หรือ password123"
+                placeholderTextColor="#94a3b8"
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry={!showPassword}
@@ -437,19 +434,19 @@ export default function App() {
               />
               <TouchableOpacity
                 onPress={() => setShowPassword(!showPassword)}
-                style={styles.eyeIconBtn}
+                style={styles.showPassBtn}
               >
-                <Text style={styles.eyeIconText}>{showPassword ? '👁️' : '👁️‍🗨️'}</Text>
+                <Text style={styles.showPassText}>{showPassword ? 'Hide' : 'Show'}</Text>
               </TouchableOpacity>
             </View>
           </View>
 
-          {/* Quick Auto-fill button */}
+          {/* Auto fill helper */}
           <TouchableOpacity style={styles.autoFillButton} onPress={handleAutoFill}>
-            <Text style={styles.autoFillText}>⚡ Quick Auto-Fill (admin / 123)</Text>
+            <Text style={styles.autoFillText}>⚡ Click to auto-fill credentials (admin / 123)</Text>
           </TouchableOpacity>
 
-          {/* Sign In Button */}
+          {/* Login Button */}
           <TouchableOpacity
             style={[styles.primaryButton, isLoggingIn && styles.buttonDisabled]}
             onPress={handleLogin}
@@ -458,19 +455,16 @@ export default function App() {
             {isLoggingIn ? (
               <ActivityIndicator color="#ffffff" />
             ) : (
-              <Text style={styles.primaryButtonText}>Sign In to Dashboard →</Text>
+              <Text style={styles.primaryButtonText}>Sign In to Workspace</Text>
             )}
           </TouchableOpacity>
 
-          {/* Credentials Card */}
+          {/* Info Footer */}
           <View style={styles.hintBox}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginBottom: 4 }}>
-              <View style={styles.onlineDot} />
-              <Text style={styles.onlineText}>Backend Connected (Port 5000)</Text>
-            </View>
             <Text style={styles.hintText}>
-              🔑 <Text style={{ fontWeight: 'bold' }}>Default Admin:</Text> admin / 123 (หรือ password123)
+              System default: <Text style={{ fontWeight: '700' }}>admin</Text> / <Text style={{ fontWeight: '700' }}>123</Text> (or password123)
             </Text>
+            <Text style={styles.hintSub}>Backend API: http://localhost:5000/api</Text>
           </View>
         </View>
       </SafeAreaView>
@@ -478,7 +472,7 @@ export default function App() {
   }
 
   // ==========================================
-  // RENDER: Dashboard Screen
+  // RENDER: Clean Corporate Dashboard Screen
   // ==========================================
   return (
     <SafeAreaView style={styles.dashboardContainer}>
@@ -492,16 +486,14 @@ export default function App() {
           </View>
           <View>
             <Text style={styles.headerTitle}>HR Manager & Salary Analytics</Text>
-            <View style={styles.headerMetaRow}>
-              <View style={styles.liveIndicator} />
-              <Text style={styles.headerSubtitle}>
-                👤 Nichakamon (ID: 6730202173)
-              </Text>
-            </View>
+            <Text style={styles.headerSubtitle}>
+              Personnel Portal | <Text style={{ color: '#93c5fd' }}>Nichakamon (6730202173)</Text>
+            </Text>
           </View>
         </View>
+
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <Text style={styles.logoutButtonText}>Log Out ⎋</Text>
+          <Text style={styles.logoutButtonText}>Sign Out</Text>
         </TouchableOpacity>
       </View>
 
@@ -511,9 +503,9 @@ export default function App() {
         <View style={styles.analyticsSection}>
           <View style={styles.sectionHeaderRow}>
             <View>
-              <Text style={styles.sectionTitle}>📊 Phase 2: Automated Salary Clustering (K-Means)</Text>
+              <Text style={styles.sectionTitle}>Phase 2: Salary Structure Analytics (K-Means)</Text>
               <Text style={styles.sectionSubtitle}>
-                Analyzes current employee payroll and groups into 3 salary tiers (k=3)
+                Automatically clusters current payroll into 3 tiers (k=3) using machine learning algorithm
               </Text>
             </View>
             <TouchableOpacity
@@ -522,12 +514,12 @@ export default function App() {
               disabled={isAnalyzing}
             >
               {isAnalyzing ? (
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                   <ActivityIndicator size="small" color="#ffffff" />
-                  <Text style={styles.analyzeButtonText}>Calculating...</Text>
+                  <Text style={styles.analyzeButtonText}>Processing...</Text>
                 </View>
               ) : (
-                <Text style={styles.analyzeButtonText}>⚡ Analyze Salary Structure</Text>
+                <Text style={styles.analyzeButtonText}>Analyze Salary Structure</Text>
               )}
             </TouchableOpacity>
           </View>
@@ -538,7 +530,7 @@ export default function App() {
               {clusters.map((tier, idx) => {
                 const theme = getTierTheme(tier.group);
                 return (
-                  <View key={idx} style={[styles.clusterCard, { borderColor: theme.borderColor }]}>
+                  <View key={idx} style={[styles.clusterCard, { borderTopColor: theme.accentColor }]}>
                     <View style={styles.clusterCardTop}>
                       <Text style={[styles.clusterTierName, { color: theme.accentColor }]}>{tier.group}</Text>
                       <View style={[styles.tierTag, { backgroundColor: theme.badgeBg }]}>
@@ -546,14 +538,14 @@ export default function App() {
                       </View>
                     </View>
                     
-                    <Text style={[styles.clusterCentroid, { color: theme.accentColor }]}>
+                    <Text style={styles.clusterCentroid}>
                       ฿{formatMoney(tier.centroid)}
                     </Text>
                     <Text style={styles.clusterSubtitle}>Average Base Salary</Text>
 
                     <View style={styles.clusterFooter}>
                       <Text style={styles.clusterFooterText}>
-                        👥 <Text style={{ fontWeight: 'bold', color: '#f8fafc' }}>{tier.count}</Text> Employees in this tier
+                        Total Staff: <Text style={{ fontWeight: '700', color: '#0f172a' }}>{tier.count}</Text> employee(s)
                       </Text>
                     </View>
                   </View>
@@ -563,7 +555,7 @@ export default function App() {
           ) : (
             <View style={styles.analyticsPlaceholder}>
               <Text style={styles.analyticsPlaceholderText}>
-                Click the <Text style={{ color: '#38bdf8', fontWeight: 'bold' }}>"⚡ Analyze Salary Structure"</Text> button above to run the K-Means clustering algorithm.
+                Click the <Text style={{ color: '#1e40af', fontWeight: '700' }}>"Analyze Salary Structure"</Text> button to group company salaries into 3 tiers.
               </Text>
             </View>
           )}
@@ -572,44 +564,44 @@ export default function App() {
         {/* Phase 1: Add Employee Card */}
         <View style={styles.addEmployeeCard}>
           <View style={styles.addCardHeader}>
-            <View style={styles.addIconCircle}>
-              <Text style={styles.addIconText}>＋</Text>
-            </View>
             <View>
-              <Text style={styles.addCardTitle}>Add New Employee (เพิ่มพนักงานใหม่)</Text>
-              <Text style={styles.addCardSubtitle}>Register new staff with their title, position, and base compensation</Text>
+              <Text style={styles.addCardTitle}>New Employee Registration</Text>
+              <Text style={styles.addCardSubtitle}>Enter employee information to add them to active payroll</Text>
             </View>
           </View>
 
           <View style={styles.formRow}>
+            {/* Name */}
             <View style={styles.formField}>
               <Text style={styles.formFieldLabel}>FULL NAME *</Text>
               <TextInput
                 style={styles.formInput}
                 placeholder="e.g. Somchai Jaidee"
-                placeholderTextColor="#64748b"
+                placeholderTextColor="#94a3b8"
                 value={newName}
                 onChangeText={setNewName}
               />
             </View>
 
+            {/* Position */}
             <View style={styles.formField}>
-              <Text style={styles.formFieldLabel}>POSITION / ROLE *</Text>
+              <Text style={styles.formFieldLabel}>POSITION / JOB TITLE *</Text>
               <TextInput
                 style={styles.formInput}
                 placeholder="e.g. Software Engineer"
-                placeholderTextColor="#64748b"
+                placeholderTextColor="#94a3b8"
                 value={newPosition}
                 onChangeText={setNewPosition}
               />
             </View>
 
+            {/* Salary */}
             <View style={styles.formField}>
-              <Text style={styles.formFieldLabel}>BASE SALARY (฿) *</Text>
+              <Text style={styles.formFieldLabel}>MONTHLY SALARY (THB) *</Text>
               <TextInput
                 style={styles.formInput}
                 placeholder="e.g. 45000"
-                placeholderTextColor="#64748b"
+                placeholderTextColor="#94a3b8"
                 keyboardType="numeric"
                 value={newSalary}
                 onChangeText={setNewSalary}
@@ -619,8 +611,8 @@ export default function App() {
 
           {/* Quick preset positions */}
           <View style={styles.presetsRow}>
-            <Text style={styles.presetsLabel}>Quick Position:</Text>
-            {['Software Engineer', 'HR Specialist', 'DevOps', 'Designer', 'Marketing'].map((pos) => (
+            <Text style={styles.presetsLabel}>Common Roles:</Text>
+            {['Software Engineer', 'HR Specialist', 'System Architect', 'Frontend Developer', 'DevOps'].map((pos) => (
               <TouchableOpacity
                 key={pos}
                 style={styles.presetChip}
@@ -639,7 +631,7 @@ export default function App() {
             {isAdding ? (
               <ActivityIndicator color="#ffffff" />
             ) : (
-              <Text style={styles.addEmployeeButtonText}>＋ Register & Add Employee</Text>
+              <Text style={styles.addEmployeeButtonText}>＋ Add Employee Record</Text>
             )}
           </TouchableOpacity>
         </View>
@@ -649,14 +641,14 @@ export default function App() {
           <View style={styles.listHeaderRow}>
             <View>
               <Text style={styles.sectionTitle}>
-                👥 Employee Directory ({filteredEmployees.length} of {employees.length})
+                Employee Directory ({filteredEmployees.length} of {employees.length})
               </Text>
               <Text style={styles.sectionSubtitle}>
-                Manage status, edit employee records, or remove personnel
+                Active staff roster and payroll overview
               </Text>
             </View>
             <TouchableOpacity style={styles.refreshButton} onPress={fetchEmployees}>
-              <Text style={styles.refreshButtonText}>🔄 Refresh Data</Text>
+              <Text style={styles.refreshButtonText}>Refresh</Text>
             </TouchableOpacity>
           </View>
 
@@ -666,8 +658,8 @@ export default function App() {
               <Text style={styles.searchIcon}>🔍</Text>
               <TextInput
                 style={styles.searchInput}
-                placeholder="Search by name, role, status, or salary..."
-                placeholderTextColor="#64748b"
+                placeholder="Search by name, position, or status..."
+                placeholderTextColor="#94a3b8"
                 value={searchQuery}
                 onChangeText={setSearchQuery}
               />
@@ -711,13 +703,12 @@ export default function App() {
 
           {/* Employee Cards List */}
           {isLoadingEmployees ? (
-            <ActivityIndicator size="large" color="#3b82f6" style={{ marginVertical: 40 }} />
+            <ActivityIndicator size="large" color="#1e40af" style={{ marginVertical: 40 }} />
           ) : filteredEmployees.length === 0 ? (
             <View style={styles.emptyContainer}>
-              <Text style={styles.emptyIcon}>🔍</Text>
-              <Text style={styles.emptyTitle}>No matching employees found</Text>
+              <Text style={styles.emptyTitle}>No employee records found</Text>
               <Text style={styles.emptySubtitle}>
-                {searchQuery ? `No results for "${searchQuery}". Try a different keyword.` : 'Click "Add Employee" above to add staff.'}
+                {searchQuery ? `No matching records for "${searchQuery}".` : 'Register your first employee above.'}
               </Text>
             </View>
           ) : (
@@ -744,7 +735,7 @@ export default function App() {
                         <Text style={styles.employeeName}>{emp.name}</Text>
                         {isOwner && (
                           <View style={styles.ownerBadge}>
-                            <Text style={styles.ownerBadgeText}>★ Student (Owner)</Text>
+                            <Text style={styles.ownerBadgeText}>★ Student Admin</Text>
                           </View>
                         )}
                         <View
@@ -756,7 +747,7 @@ export default function App() {
                           <View
                             style={[
                               styles.statusDot,
-                              { backgroundColor: emp.status === 'Active' ? '#10b981' : '#f59e0b' }
+                              { backgroundColor: emp.status === 'Active' ? '#16a34a' : '#d97706' }
                             ]}
                           />
                           <Text
@@ -775,7 +766,7 @@ export default function App() {
                       <Text style={styles.employeePosition}>{emp.position}</Text>
                       
                       <View style={styles.salaryRow}>
-                        <Text style={styles.salaryLabel}>Monthly Salary: </Text>
+                        <Text style={styles.salaryLabel}>Base Salary: </Text>
                         <Text style={styles.salaryAmount}>฿{formatMoney(emp.salary)}</Text>
                       </View>
                     </View>
@@ -787,7 +778,7 @@ export default function App() {
                       style={styles.editButton}
                       onPress={() => openEditModal(emp)}
                     >
-                      <Text style={styles.editButtonText}>✏️ Edit</Text>
+                      <Text style={styles.editButtonText}>Edit</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity
@@ -822,11 +813,11 @@ export default function App() {
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <View>
-                <Text style={styles.modalTitle}>✏️ Edit Employee Information</Text>
-                <Text style={styles.modalSubtitle}>ID: #{editingEmployee?.id}</Text>
+                <Text style={styles.modalTitle}>Edit Employee Record</Text>
+                <Text style={styles.modalSubtitle}>System ID: #{editingEmployee?.id}</Text>
               </View>
               <TouchableOpacity onPress={closeEditModal} style={styles.modalCloseIcon}>
-                <Text style={{ color: '#94a3b8', fontSize: 18, fontWeight: 'bold' }}>✕</Text>
+                <Text style={{ color: '#64748b', fontSize: 18, fontWeight: 'bold' }}>✕</Text>
               </TouchableOpacity>
             </View>
 
@@ -837,7 +828,7 @@ export default function App() {
                 value={editName}
                 onChangeText={setEditName}
                 placeholder="Full Name"
-                placeholderTextColor="#64748b"
+                placeholderTextColor="#94a3b8"
               />
             </View>
 
@@ -848,18 +839,18 @@ export default function App() {
                 value={editPosition}
                 onChangeText={setEditPosition}
                 placeholder="Position"
-                placeholderTextColor="#64748b"
+                placeholderTextColor="#94a3b8"
               />
             </View>
 
             <View style={styles.modalField}>
-              <Text style={styles.modalLabel}>BASE SALARY (฿)</Text>
+              <Text style={styles.modalLabel}>BASE SALARY (THB)</Text>
               <TextInput
                 style={styles.modalInput}
                 value={editSalary}
                 onChangeText={setEditSalary}
                 placeholder="Salary"
-                placeholderTextColor="#64748b"
+                placeholderTextColor="#94a3b8"
                 keyboardType="numeric"
               />
             </View>
@@ -910,7 +901,7 @@ export default function App() {
                 {isSavingEdit ? (
                   <ActivityIndicator color="#ffffff" />
                 ) : (
-                  <Text style={styles.modalSaveText}>Save Changes ✓</Text>
+                  <Text style={styles.modalSaveText}>Save Changes</Text>
                 )}
               </TouchableOpacity>
             </View>
@@ -922,176 +913,173 @@ export default function App() {
 }
 
 // ==========================================
-// MODERN STYLES
+// REAL ENTERPRISE HR PORTAL STYLES (Clean, Modern & Trustworthy)
 // ==========================================
 const styles = StyleSheet.create({
-  // Modern Login Styles
+  // Clean Login Styles
   loginContainer: {
     flex: 1,
-    backgroundColor: '#0a0f1d',
+    backgroundColor: '#f1f5f9',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20
   },
   loginCard: {
-    backgroundColor: '#111827',
-    borderRadius: 24,
-    padding: 34,
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 36,
     width: '100%',
     maxWidth: 440,
     borderWidth: 1,
-    borderColor: '#1f2937',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 24 },
-    shadowOpacity: 0.6,
-    shadowRadius: 36
+    borderColor: '#e2e8f0',
+    shadowColor: '#0f172a',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.08,
+    shadowRadius: 24
   },
   loginHeader: {
     alignItems: 'center',
     marginBottom: 24
   },
   logoBadge: {
-    width: 56,
-    height: 56,
-    borderRadius: 16,
-    backgroundColor: '#2563eb',
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    backgroundColor: '#1e40af',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 14,
-    shadowColor: '#2563eb',
-    shadowOpacity: 0.6,
-    shadowRadius: 14
+    marginBottom: 12
   },
   logoBadgeText: {
-    fontSize: 22,
-    fontWeight: '900',
+    fontSize: 20,
+    fontWeight: '800',
     color: '#ffffff'
   },
   loginTitle: {
-    fontSize: 24,
-    fontWeight: '900',
-    color: '#f8fafc',
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#0f172a',
     marginBottom: 4
   },
   loginSubtitle: {
     fontSize: 13,
-    color: '#94a3b8',
+    color: '#64748b',
     textAlign: 'center'
   },
-  creatorPill: {
-    backgroundColor: 'rgba(56, 189, 248, 0.12)',
+  authorBadge: {
+    backgroundColor: '#eff6ff',
     borderWidth: 1,
-    borderColor: 'rgba(56, 189, 248, 0.3)',
+    borderColor: '#bfdbfe',
     paddingHorizontal: 12,
     paddingVertical: 5,
     borderRadius: 20,
     marginTop: 10
   },
-  creatorPillText: {
+  authorBadgeText: {
     fontSize: 11,
-    color: '#cbd5e1'
+    color: '#1e40af'
   },
   inputGroup: {
     marginBottom: 16
   },
   inputLabel: {
     fontSize: 11,
-    fontWeight: '800',
-    color: '#cbd5e1',
-    letterSpacing: 1,
-    marginBottom: 7
+    fontWeight: '700',
+    color: '#475569',
+    letterSpacing: 0.5,
+    marginBottom: 6
   },
-  inputWrapper: {
+  textInput: {
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#cbd5e1',
+    borderRadius: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 11,
+    fontSize: 14,
+    color: '#0f172a'
+  },
+  passwordWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#030712',
+    backgroundColor: '#ffffff',
     borderWidth: 1,
-    borderColor: '#374151',
-    borderRadius: 12,
+    borderColor: '#cbd5e1',
+    borderRadius: 8,
     paddingHorizontal: 14
   },
-  inputIcon: {
-    fontSize: 14,
-    marginRight: 10
-  },
-  textInputWithIcon: {
+  passwordInput: {
     flex: 1,
-    paddingVertical: 13,
+    paddingVertical: 11,
     fontSize: 14,
-    color: '#f8fafc'
+    color: '#0f172a'
   },
-  eyeIconBtn: {
-    padding: 6
+  showPassBtn: {
+    paddingVertical: 4,
+    paddingHorizontal: 6
   },
-  eyeIconText: {
-    fontSize: 15
+  showPassText: {
+    fontSize: 12,
+    color: '#2563eb',
+    fontWeight: '700'
   },
   autoFillButton: {
     alignSelf: 'flex-end',
-    marginBottom: 14,
-    paddingVertical: 4
+    marginBottom: 14
   },
   autoFillText: {
-    color: '#38bdf8',
+    color: '#2563eb',
     fontSize: 12,
-    fontWeight: '700'
+    fontWeight: '600'
   },
   primaryButton: {
-    backgroundColor: '#2563eb',
-    borderRadius: 12,
-    paddingVertical: 14,
+    backgroundColor: '#1e40af',
+    borderRadius: 8,
+    paddingVertical: 13,
     alignItems: 'center',
-    shadowColor: '#2563eb',
-    shadowOpacity: 0.5,
-    shadowRadius: 14
+    marginTop: 6
   },
   primaryButtonText: {
     color: '#ffffff',
-    fontSize: 15,
-    fontWeight: '800'
+    fontSize: 14,
+    fontWeight: '700'
   },
   buttonDisabled: {
     opacity: 0.6
   },
   hintBox: {
-    marginTop: 22,
-    padding: 14,
-    backgroundColor: 'rgba(30, 58, 138, 0.2)',
-    borderRadius: 12,
+    marginTop: 20,
+    padding: 12,
+    backgroundColor: '#f8fafc',
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: 'rgba(59, 130, 246, 0.3)'
-  },
-  onlineDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#10b981'
-  },
-  onlineText: {
-    color: '#34d399',
-    fontSize: 11,
-    fontWeight: '700'
+    borderColor: '#e2e8f0',
+    alignItems: 'center'
   },
   hintText: {
-    color: '#93c5fd',
-    fontSize: 12,
-    textAlign: 'center'
+    color: '#475569',
+    fontSize: 12
+  },
+  hintSub: {
+    color: '#94a3b8',
+    fontSize: 11,
+    marginTop: 2
   },
 
-  // Dashboard Styles
+  // Corporate Dashboard Styles
   dashboardContainer: {
     flex: 1,
-    backgroundColor: '#0a0f1d'
+    backgroundColor: '#f8fafc'
   },
   headerBar: {
-    backgroundColor: '#111827',
-    borderBottomWidth: 1,
-    borderBottomColor: '#1f2937',
+    backgroundColor: '#0f172a', // Deep Executive Navy
     paddingHorizontal: 24,
     paddingVertical: 16,
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center'
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: '#1e293b'
   },
   headerBrand: {
     flexDirection: 'row',
@@ -1099,52 +1087,40 @@ const styles = StyleSheet.create({
     gap: 12
   },
   brandIconBox: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
+    width: 36,
+    height: 36,
+    borderRadius: 8,
     backgroundColor: '#2563eb',
     justifyContent: 'center',
     alignItems: 'center'
   },
   brandIconText: {
-    fontSize: 16,
-    fontWeight: '900',
+    fontSize: 15,
+    fontWeight: '800',
     color: '#ffffff'
   },
   headerTitle: {
-    color: '#f8fafc',
-    fontSize: 18,
-    fontWeight: '900'
-  },
-  headerMetaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginTop: 2
-  },
-  liveIndicator: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#10b981'
+    color: '#ffffff',
+    fontSize: 17,
+    fontWeight: '800'
   },
   headerSubtitle: {
-    color: '#38bdf8',
+    color: '#94a3b8',
     fontSize: 12,
-    fontWeight: '700'
+    marginTop: 1
   },
   logoutButton: {
-    backgroundColor: '#1f2937',
+    backgroundColor: '#1e293b',
     borderWidth: 1,
-    borderColor: '#374151',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 8
+    borderColor: '#334155',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6
   },
   logoutButtonText: {
-    color: '#f8fafc',
-    fontSize: 13,
-    fontWeight: '700'
+    color: '#e2e8f0',
+    fontSize: 12,
+    fontWeight: '600'
   },
   scrollContent: {
     flex: 1,
@@ -1153,12 +1129,16 @@ const styles = StyleSheet.create({
 
   // Analytics Section
   analyticsSection: {
-    backgroundColor: '#111827',
-    borderRadius: 16,
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
     padding: 20,
     marginBottom: 20,
     borderWidth: 1,
-    borderColor: '#1f2937'
+    borderColor: '#e2e8f0',
+    shadowColor: '#0f172a',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6
   },
   sectionHeaderRow: {
     flexDirection: 'row',
@@ -1169,88 +1149,87 @@ const styles = StyleSheet.create({
     marginBottom: 16
   },
   sectionTitle: {
-    color: '#f8fafc',
-    fontSize: 17,
-    fontWeight: '900'
+    color: '#0f172a',
+    fontSize: 16,
+    fontWeight: '800'
   },
   sectionSubtitle: {
-    color: '#94a3b8',
+    color: '#64748b',
     fontSize: 12,
     marginTop: 2
   },
   analyzeButton: {
-    backgroundColor: '#0284c7',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 10,
-    shadowColor: '#0284c7',
-    shadowOpacity: 0.4,
-    shadowRadius: 8
+    backgroundColor: '#1e40af',
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    borderRadius: 6
   },
   analyzeButtonText: {
     color: '#ffffff',
-    fontWeight: '800',
+    fontWeight: '700',
     fontSize: 13
   },
   clustersRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 14,
-    marginTop: 8
+    marginTop: 6
   },
   clusterCard: {
     flex: 1,
     minWidth: 220,
-    backgroundColor: '#030712',
-    borderRadius: 14,
-    padding: 18,
-    borderWidth: 1.5
+    backgroundColor: '#f8fafc',
+    borderRadius: 10,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    borderTopWidth: 4
   },
   clusterCardTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 10
+    marginBottom: 8
   },
   clusterTierName: {
-    fontSize: 16,
-    fontWeight: '900'
+    fontSize: 15,
+    fontWeight: '800'
   },
   tierTag: {
     paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6
+    paddingVertical: 2,
+    borderRadius: 4
   },
   tierTagText: {
     fontSize: 11,
-    fontWeight: '800'
+    fontWeight: '700'
   },
   clusterCentroid: {
-    fontSize: 26,
-    fontWeight: '900',
-    marginBottom: 2
+    fontSize: 24,
+    fontWeight: '800',
+    color: '#0f172a',
+    marginBottom: 1
   },
   clusterSubtitle: {
     color: '#64748b',
     fontSize: 11,
-    fontWeight: '600',
-    marginBottom: 14
+    marginBottom: 12
   },
   clusterFooter: {
     borderTopWidth: 1,
-    borderTopColor: '#1f2937',
-    paddingTop: 10
+    borderTopColor: '#e2e8f0',
+    paddingTop: 8
   },
   clusterFooterText: {
-    color: '#94a3b8',
+    color: '#475569',
     fontSize: 12
   },
   analyticsPlaceholder: {
-    padding: 24,
-    backgroundColor: '#030712',
-    borderRadius: 12,
+    padding: 20,
+    backgroundColor: '#f8fafc',
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#1f2937',
+    borderColor: '#e2e8f0',
     alignItems: 'center'
   },
   analyticsPlaceholderText: {
@@ -1261,115 +1240,105 @@ const styles = StyleSheet.create({
 
   // Add Employee Card
   addEmployeeCard: {
-    backgroundColor: '#111827',
-    borderRadius: 16,
-    padding: 22,
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 20,
     marginBottom: 20,
     borderWidth: 1,
-    borderColor: '#1f2937'
+    borderColor: '#e2e8f0',
+    shadowColor: '#0f172a',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6
   },
   addCardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    marginBottom: 18
-  },
-  addIconCircle: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: 'rgba(16, 185, 129, 0.15)',
-    justifyContent: 'center',
-    alignItems: 'center'
-  },
-  addIconText: {
-    color: '#10b981',
-    fontSize: 20,
-    fontWeight: '900'
+    marginBottom: 14
   },
   addCardTitle: {
-    color: '#f8fafc',
-    fontSize: 17,
-    fontWeight: '900'
+    color: '#0f172a',
+    fontSize: 16,
+    fontWeight: '800'
   },
   addCardSubtitle: {
-    color: '#94a3b8',
-    fontSize: 12
+    color: '#64748b',
+    fontSize: 12,
+    marginTop: 2
   },
   formRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 14,
-    marginBottom: 14
+    gap: 12,
+    marginBottom: 12
   },
   formField: {
     flex: 1,
     minWidth: 180
   },
   formFieldLabel: {
-    color: '#94a3b8',
+    color: '#475569',
     fontSize: 11,
-    fontWeight: '800',
+    fontWeight: '700',
     letterSpacing: 0.5,
     marginBottom: 6
   },
   formInput: {
-    backgroundColor: '#030712',
+    backgroundColor: '#ffffff',
     borderWidth: 1,
-    borderColor: '#374151',
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 11,
+    borderColor: '#cbd5e1',
+    borderRadius: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
     fontSize: 13,
-    color: '#f8fafc'
+    color: '#0f172a'
   },
   presetsRow: {
     flexDirection: 'row',
     alignItems: 'center',
     flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 16
+    gap: 6,
+    marginBottom: 14
   },
   presetsLabel: {
     color: '#64748b',
     fontSize: 11,
-    fontWeight: '700'
+    fontWeight: '600'
   },
   presetChip: {
-    backgroundColor: '#1f2937',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 6,
+    backgroundColor: '#f1f5f9',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 4,
     borderWidth: 1,
-    borderColor: '#374151'
+    borderColor: '#e2e8f0'
   },
   presetChipText: {
-    color: '#cbd5e1',
+    color: '#334155',
     fontSize: 11,
     fontWeight: '600'
   },
   addEmployeeButton: {
-    backgroundColor: '#10b981',
-    borderRadius: 10,
-    paddingVertical: 13,
-    alignItems: 'center',
-    shadowColor: '#10b981',
-    shadowOpacity: 0.3,
-    shadowRadius: 8
+    backgroundColor: '#15803d', // Corporate Forest Green
+    borderRadius: 6,
+    paddingVertical: 11,
+    alignItems: 'center'
   },
   addEmployeeButtonText: {
     color: '#ffffff',
-    fontWeight: '800',
-    fontSize: 14
+    fontWeight: '700',
+    fontSize: 13
   },
 
   // Employee Directory
   listSection: {
-    backgroundColor: '#111827',
-    borderRadius: 16,
-    padding: 22,
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 20,
     borderWidth: 1,
-    borderColor: '#1f2937'
+    borderColor: '#e2e8f0',
+    shadowColor: '#0f172a',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6
   },
   listHeaderRow: {
     flexDirection: 'row',
@@ -1377,26 +1346,26 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexWrap: 'wrap',
     gap: 10,
-    marginBottom: 16
+    marginBottom: 14
   },
   refreshButton: {
-    backgroundColor: '#1f2937',
+    backgroundColor: '#f8fafc',
     borderWidth: 1,
-    borderColor: '#374151',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8
+    borderColor: '#cbd5e1',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 6
   },
   refreshButtonText: {
-    color: '#38bdf8',
+    color: '#334155',
     fontSize: 12,
-    fontWeight: '700'
+    fontWeight: '600'
   },
   filterBarRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 12,
-    marginBottom: 16,
+    gap: 10,
+    marginBottom: 14,
     alignItems: 'center'
   },
   searchBarContainer: {
@@ -1404,28 +1373,28 @@ const styles = StyleSheet.create({
     minWidth: 220,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#030712',
-    borderRadius: 10,
+    backgroundColor: '#ffffff',
+    borderRadius: 6,
     borderWidth: 1,
-    borderColor: '#374151',
-    paddingHorizontal: 12
+    borderColor: '#cbd5e1',
+    paddingHorizontal: 10
   },
   searchIcon: {
-    fontSize: 13,
-    marginRight: 8
+    fontSize: 12,
+    marginRight: 6
   },
   searchInput: {
     flex: 1,
-    paddingVertical: 10,
-    color: '#f8fafc',
+    paddingVertical: 8,
+    color: '#0f172a',
     fontSize: 13
   },
   clearSearchBtn: {
-    padding: 6
+    padding: 4
   },
   clearSearchText: {
     color: '#94a3b8',
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '700'
   },
   statusFilters: {
@@ -1433,91 +1402,86 @@ const styles = StyleSheet.create({
     gap: 6
   },
   statusFilterBtn: {
-    backgroundColor: '#1f2937',
-    paddingHorizontal: 12,
-    paddingVertical: 9,
-    borderRadius: 8,
+    backgroundColor: '#f1f5f9',
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    borderRadius: 6,
     borderWidth: 1,
-    borderColor: '#374151'
+    borderColor: '#e2e8f0'
   },
   statusFilterBtnActive: {
-    backgroundColor: '#2563eb',
-    borderColor: '#3b82f6'
+    backgroundColor: '#1e40af',
+    borderColor: '#1e40af'
   },
   statusFilterText: {
-    color: '#94a3b8',
+    color: '#475569',
     fontSize: 12,
-    fontWeight: '700'
+    fontWeight: '600'
   },
   statusFilterTextActive: {
     color: '#ffffff'
   },
   emptyContainer: {
     alignItems: 'center',
-    padding: 36
-  },
-  emptyIcon: {
-    fontSize: 36,
-    marginBottom: 10
+    padding: 30
   },
   emptyTitle: {
-    color: '#f8fafc',
-    fontSize: 16,
-    fontWeight: '800'
+    color: '#0f172a',
+    fontSize: 15,
+    fontWeight: '700'
   },
   emptySubtitle: {
     color: '#64748b',
-    fontSize: 13,
-    marginTop: 4,
-    textAlign: 'center'
+    fontSize: 12,
+    marginTop: 2
   },
 
   // Employee Card
   employeeCard: {
-    backgroundColor: '#030712',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 10,
+    backgroundColor: '#ffffff',
+    borderRadius: 8,
+    padding: 14,
+    marginBottom: 8,
     borderWidth: 1,
-    borderColor: '#1f2937',
+    borderColor: '#e2e8f0',
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     flexWrap: 'wrap',
-    gap: 14
+    gap: 12
   },
   employeeCardOwner: {
-    borderColor: '#f59e0b',
-    backgroundColor: '#0a0f1d'
+    borderColor: '#fcd34d',
+    backgroundColor: '#fffbeb'
   },
   employeeMainRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 14,
+    gap: 12,
     flex: 1,
     minWidth: 260
   },
   avatarCircle: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#1f2937',
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: '#f1f5f9',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#374151'
+    borderColor: '#cbd5e1'
   },
   avatarOwner: {
-    backgroundColor: '#f59e0b',
-    borderColor: '#fbbf24'
+    backgroundColor: '#fef3c7',
+    borderColor: '#f59e0b'
   },
   avatarText: {
-    color: '#f8fafc',
-    fontSize: 14,
-    fontWeight: '900'
+    color: '#334155',
+    fontSize: 13,
+    fontWeight: '700'
   },
   avatarOwnerText: {
-    color: '#0f172a'
+    color: '#b45309'
   },
   employeeInfo: {
     flex: 1
@@ -1525,146 +1489,156 @@ const styles = StyleSheet.create({
   nameRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
     flexWrap: 'wrap'
   },
   employeeName: {
-    color: '#f8fafc',
-    fontSize: 15,
-    fontWeight: '800'
+    color: '#0f172a',
+    fontSize: 14,
+    fontWeight: '700'
   },
   ownerBadge: {
-    backgroundColor: 'rgba(245, 158, 11, 0.2)',
+    backgroundColor: '#fef3c7',
     borderWidth: 1,
-    borderColor: '#f59e0b',
-    paddingHorizontal: 7,
-    paddingVertical: 2,
-    borderRadius: 6
+    borderColor: '#fde68a',
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: 4
   },
   ownerBadgeText: {
-    color: '#fbbf24',
+    color: '#92400e',
     fontSize: 10,
-    fontWeight: '800'
+    fontWeight: '700'
   },
   statusBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6
+    gap: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4
   },
   statusDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3
+    width: 5,
+    height: 5,
+    borderRadius: 2.5
   },
   statusActive: {
-    backgroundColor: 'rgba(16, 185, 129, 0.15)'
+    backgroundColor: '#dcfce7'
   },
   statusActiveText: {
-    color: '#34d399',
+    color: '#15803d',
     fontSize: 11,
-    fontWeight: '700'
+    fontWeight: '600'
   },
   statusLeave: {
-    backgroundColor: 'rgba(245, 158, 11, 0.15)'
+    backgroundColor: '#fef3c7'
   },
   statusLeaveText: {
-    color: '#fbbf24',
+    color: '#b45309',
     fontSize: 11,
-    fontWeight: '700'
+    fontWeight: '600'
   },
   employeePosition: {
-    color: '#94a3b8',
-    fontSize: 13,
-    marginTop: 3
+    color: '#64748b',
+    fontSize: 12,
+    marginTop: 2
   },
   salaryRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 4
+    marginTop: 3
   },
   salaryLabel: {
     color: '#64748b',
-    fontSize: 12
+    fontSize: 11
   },
   salaryAmount: {
-    color: '#10b981',
-    fontSize: 13,
-    fontWeight: '800'
+    color: '#0f172a',
+    fontSize: 12,
+    fontWeight: '700'
   },
 
   // Actions
   actionRow: {
     flexDirection: 'row',
-    gap: 8,
+    gap: 6,
     alignItems: 'center'
   },
   editButton: {
-    backgroundColor: '#d97706',
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 6
+    backgroundColor: '#f8fafc',
+    borderWidth: 1,
+    borderColor: '#cbd5e1',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 5
   },
   editButtonText: {
-    color: '#ffffff',
+    color: '#334155',
     fontSize: 12,
-    fontWeight: '700'
+    fontWeight: '600'
   },
   toggleButton: {
-    backgroundColor: '#2563eb',
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 6
+    backgroundColor: '#eff6ff',
+    borderWidth: 1,
+    borderColor: '#bfdbfe',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 5
   },
   toggleButtonText: {
-    color: '#ffffff',
+    color: '#1d4ed8',
     fontSize: 12,
-    fontWeight: '700'
+    fontWeight: '600'
   },
   deleteButton: {
-    backgroundColor: '#dc2626',
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 6
+    backgroundColor: '#fef2f2',
+    borderWidth: 1,
+    borderColor: '#fecaca',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 5
   },
   deleteButtonText: {
-    color: '#ffffff',
+    color: '#dc2626',
     fontSize: 12,
-    fontWeight: '700'
+    fontWeight: '600'
   },
 
   // Modal
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.75)',
+    backgroundColor: 'rgba(15, 23, 42, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20
   },
   modalContent: {
-    backgroundColor: '#111827',
-    borderRadius: 18,
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
     padding: 24,
     width: '100%',
-    maxWidth: 480,
+    maxWidth: 460,
     borderWidth: 1,
-    borderColor: '#374151'
+    borderColor: '#e2e8f0',
+    shadowColor: '#0f172a',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.1,
+    shadowRadius: 20
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 18
+    marginBottom: 16
   },
   modalTitle: {
-    color: '#f8fafc',
-    fontSize: 18,
-    fontWeight: '900'
+    color: '#0f172a',
+    fontSize: 17,
+    fontWeight: '800'
   },
   modalSubtitle: {
-    color: '#38bdf8',
+    color: '#64748b',
     fontSize: 12,
     marginTop: 2
   },
@@ -1672,78 +1646,82 @@ const styles = StyleSheet.create({
     padding: 4
   },
   modalField: {
-    marginBottom: 14
+    marginBottom: 12
   },
   modalLabel: {
-    color: '#cbd5e1',
+    color: '#475569',
     fontSize: 11,
-    fontWeight: '800',
-    marginBottom: 6
+    fontWeight: '700',
+    marginBottom: 5
   },
   modalInput: {
-    backgroundColor: '#030712',
+    backgroundColor: '#ffffff',
     borderWidth: 1,
-    borderColor: '#374151',
-    borderRadius: 8,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    fontSize: 14,
-    color: '#f8fafc'
+    borderColor: '#cbd5e1',
+    borderRadius: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    fontSize: 13,
+    color: '#0f172a'
   },
   statusChoiceBtn: {
     flex: 1,
-    paddingVertical: 10,
-    borderRadius: 8,
-    backgroundColor: '#030712',
+    paddingVertical: 9,
+    borderRadius: 6,
+    backgroundColor: '#f8fafc',
     borderWidth: 1,
-    borderColor: '#374151',
+    borderColor: '#e2e8f0',
     alignItems: 'center'
   },
   statusChoiceActive: {
-    backgroundColor: 'rgba(16, 185, 129, 0.2)',
-    borderColor: '#10b981'
+    backgroundColor: '#dcfce7',
+    borderColor: '#86efac'
   },
   statusChoiceLeave: {
-    backgroundColor: 'rgba(245, 158, 11, 0.2)',
-    borderColor: '#f59e0b'
+    backgroundColor: '#fef3c7',
+    borderColor: '#fde68a'
   },
   statusChoiceText: {
-    color: '#94a3b8',
+    color: '#64748b',
     fontSize: 12,
-    fontWeight: '700'
+    fontWeight: '600'
   },
   statusChoiceTextActive: {
-    color: '#34d399'
+    color: '#15803d',
+    fontWeight: '700'
   },
   statusChoiceTextLeave: {
-    color: '#fbbf24'
+    color: '#b45309',
+    fontWeight: '700'
   },
   modalActions: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
-    gap: 10,
-    marginTop: 20
+    gap: 8,
+    marginTop: 18
   },
   modalCancelBtn: {
-    backgroundColor: '#1f2937',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 8
+    backgroundColor: '#f1f5f9',
+    borderWidth: 1,
+    borderColor: '#cbd5e1',
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    borderRadius: 6
   },
   modalCancelText: {
-    color: '#f8fafc',
+    color: '#475569',
     fontSize: 13,
-    fontWeight: '700'
+    fontWeight: '600'
   },
   modalSaveBtn: {
-    backgroundColor: '#2563eb',
-    paddingHorizontal: 18,
-    paddingVertical: 10,
-    borderRadius: 8
+    backgroundColor: '#1e40af',
+    paddingHorizontal: 16,
+    paddingVertical: 9,
+    borderRadius: 6
   },
   modalSaveText: {
     color: '#ffffff',
     fontSize: 13,
-    fontWeight: '800'
+    fontWeight: '700'
   }
 });
