@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const mysql = require('mysql2/promise');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -9,77 +10,84 @@ app.use(cors());
 app.use(express.json());
 
 // ==========================================
-// Mock Data (In-memory array - At least 5 employees)
+// In-Memory Fallback Data
 // ==========================================
-let employees = [
-  {
-    id: "1",
-    name: "Nichakamon",
-    position: "HR Manager",
-    status: "Active",
-    salary: 55000
-  },
-  {
-    id: "2",
-    name: "John Doe",
-    position: "Software Engineer",
-    status: "Active",
-    salary: 45000
-  },
-  {
-    id: "3",
-    name: "Jane Smith",
-    position: "HR Specialist",
-    status: "Active",
-    salary: 32000
-  },
-  {
-    id: "4",
-    name: "Michael Brown",
-    position: "Senior System Architect",
-    status: "Active",
-    salary: 85000
-  },
-  {
-    id: "5",
-    name: "Emily Davis",
-    position: "Junior Frontend Developer",
-    status: "On Leave",
-    salary: 22000
-  },
-  {
-    id: "6",
-    name: "David Wilson",
-    position: "DevOps Engineer",
-    status: "Active",
-    salary: 52000
-  },
-  {
-    id: "7",
-    name: "Sarah Connor",
-    position: "Engineering Director",
-    status: "Active",
-    salary: 95000
-  },
-  {
-    id: "8",
-    name: "Peter Parker",
-    position: "Intern",
-    status: "On Leave",
-    salary: 15000
-  }
+let memoryEmployees = [
+  { id: "1", name: "Nichakamon", position: "HR Manager", status: "Active", salary: 55000 },
+  { id: "2", name: "John Doe", position: "Software Engineer", status: "Active", salary: 45000 },
+  { id: "3", name: "Jane Smith", position: "HR Specialist", status: "Active", salary: 32000 },
+  { id: "4", name: "Michael Brown", position: "Senior System Architect", status: "Active", salary: 85000 },
+  { id: "5", name: "Emily Davis", position: "Junior Frontend Developer", status: "On Leave", salary: 22000 },
+  { id: "6", name: "David Wilson", position: "DevOps Engineer", status: "Active", salary: 52000 },
+  { id: "7", name: "Sarah Connor", position: "Engineering Director", status: "Active", salary: 95000 },
+  { id: "8", name: "Peter Parker", position: "Intern", status: "On Leave", salary: 15000 }
 ];
-
-// Helper to auto-increment ID
-let nextId = 9;
+let nextMemoryId = 9;
 
 // ==========================================
-// 1.1 Authentication (Login) Endpoint
+// MySQL Database Pool Setup
+// ==========================================
+let dbPool = null;
+let useDatabase = false;
+
+async function initDatabase() {
+  try {
+    const pool = mysql.createPool({
+      host: process.env.DB_HOST || '127.0.0.1',
+      user: process.env.DB_USER || 'root',
+      password: process.env.DB_PASSWORD || '',
+      database: process.env.DB_NAME || 'ip_std6730202173',
+      waitForConnections: true,
+      connectionLimit: 10,
+      queueLimit: 0,
+      connectTimeout: 3000
+    });
+
+    // Test connection
+    const conn = await pool.getConnection();
+    console.log('Connected to MySQL Database (ip_std6730202173) successfully!');
+
+    // Ensure table exists
+    await conn.execute(`
+      CREATE TABLE IF NOT EXISTS employees (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        position VARCHAR(255) NOT NULL,
+        status VARCHAR(50) DEFAULT 'Active',
+        salary INT NOT NULL
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+
+    // Ensure initial rows exist
+    const [rows] = await conn.execute('SELECT COUNT(*) as count FROM employees');
+    if (rows[0].count === 0) {
+      for (const emp of memoryEmployees) {
+        await conn.execute(
+          'INSERT INTO employees (name, position, status, salary) VALUES (?, ?, ?, ?)',
+          [emp.name, emp.position, emp.status, emp.salary]
+        );
+      }
+      console.log('Seeded employees table in MySQL!');
+    }
+
+    conn.release();
+    dbPool = pool;
+    useDatabase = true;
+  } catch (error) {
+    console.warn('MySQL not available, running in In-Memory mode:', error.message);
+    useDatabase = false;
+  }
+}
+
+initDatabase();
+
+// ==========================================
+// 1. Authentication (Login) Endpoint
 // ==========================================
 app.post('/api/login', (req, res) => {
   const { username, password } = req.body || {};
 
-  // Check credentials: allow both 'password123' (as per exam spec) and '123'
+  // Check credentials: allow 'admin' / '123' or 'password123'
   if (username === 'admin' && (password === 'password123' || password === '123')) {
     return res.status(200).json({
       success: true,
@@ -94,15 +102,41 @@ app.post('/api/login', (req, res) => {
 });
 
 // ==========================================
-// 1.1 CRUD API Endpoints (ค้นหา / เพิ่ม / แก้ไข / ลบ)
+// 1.1 CRUD API Endpoints (Database-backed with fallback)
 // ==========================================
 
 // [GET] /api/employees - Return all employee records (supports ?q= or ?search=)
-app.get('/api/employees', (req, res) => {
+app.get('/api/employees', async (req, res) => {
   const { q, search } = req.query;
   const keyword = (q || search || '').toLowerCase().trim();
+
+  if (useDatabase && dbPool) {
+    try {
+      let query = 'SELECT id, name, position, status, salary FROM employees';
+      let params = [];
+
+      if (keyword) {
+        query += ' WHERE LOWER(name) LIKE ? OR LOWER(position) LIKE ? OR LOWER(status) LIKE ? OR CAST(salary AS CHAR) LIKE ?';
+        const like = `%${keyword}%`;
+        params = [like, like, like, like];
+      }
+
+      query += ' ORDER BY id ASC';
+      const [rows] = await dbPool.execute(query, params);
+      const formatted = rows.map(r => ({
+        ...r,
+        id: String(r.id),
+        salary: Number(r.salary)
+      }));
+      return res.status(200).json(formatted);
+    } catch (err) {
+      console.error('Database GET error:', err);
+    }
+  }
+
+  // Memory fallback
   if (keyword) {
-    const filtered = employees.filter(emp =>
+    const filtered = memoryEmployees.filter(emp =>
       emp.name.toLowerCase().includes(keyword) ||
       emp.position.toLowerCase().includes(keyword) ||
       emp.status.toLowerCase().includes(keyword) ||
@@ -110,14 +144,14 @@ app.get('/api/employees', (req, res) => {
     );
     return res.status(200).json(filtered);
   }
-  res.status(200).json(employees);
+  res.status(200).json(memoryEmployees);
 });
 
 // [POST] /api/employees - Add a new employee
-app.post('/api/employees', (req, res) => {
+app.post('/api/employees', async (req, res) => {
   const { name, position, salary } = req.body || {};
 
-  // Validate: all fields must be non-empty
+  // Validation: Status 400 Bad Request if any field is empty
   if (
     !name ||
     !String(name).trim() ||
@@ -134,22 +168,48 @@ app.post('/api/employees', (req, res) => {
   }
 
   const numericSalary = Number(salary);
-  if (isNaN(numericSalary) || numericSalary < 0) {
+  if (isNaN(numericSalary) || numericSalary <= 0) {
     return res.status(400).json({
       success: false,
       error: "Salary must be a valid positive number."
     });
   }
 
+  const cleanName = String(name).trim();
+  const cleanPos = String(position).trim();
+
+  if (useDatabase && dbPool) {
+    try {
+      const [result] = await dbPool.execute(
+        'INSERT INTO employees (name, position, status, salary) VALUES (?, ?, "Active", ?)',
+        [cleanName, cleanPos, numericSalary]
+      );
+      const newEmployee = {
+        id: String(result.insertId),
+        name: cleanName,
+        position: cleanPos,
+        status: "Active",
+        salary: numericSalary
+      };
+      return res.status(201).json({
+        success: true,
+        message: "Employee added successfully to MySQL database",
+        employee: newEmployee
+      });
+    } catch (err) {
+      console.error('Database POST error:', err);
+    }
+  }
+
+  // Memory fallback
   const newEmployee = {
-    id: String(nextId++),
-    name: String(name).trim(),
-    position: String(position).trim(),
-    status: "Active", // Default status
+    id: String(nextMemoryId++),
+    name: cleanName,
+    position: cleanPos,
+    status: "Active",
     salary: numericSalary
   };
-
-  employees.push(newEmployee);
+  memoryEmployees.push(newEmployee);
 
   res.status(201).json({
     success: true,
@@ -158,17 +218,43 @@ app.post('/api/employees', (req, res) => {
   });
 });
 
-// [PUT] /api/employees/:id - Edit employee details (แก้ไขข้อมูลพนักงาน)
-app.put('/api/employees/:id', (req, res) => {
+// [PUT] /api/employees/:id - Edit employee details
+app.put('/api/employees/:id', async (req, res) => {
   const { id } = req.params;
   const { name, position, salary, status } = req.body || {};
-  const employee = employees.find(emp => emp.id === String(id));
 
+  if (useDatabase && dbPool) {
+    try {
+      const [check] = await dbPool.execute('SELECT * FROM employees WHERE id = ?', [id]);
+      if (check.length === 0) {
+        return res.status(404).json({ success: false, error: `Employee #${id} not found.` });
+      }
+
+      const current = check[0];
+      const newName = name ? String(name).trim() : current.name;
+      const newPos = position ? String(position).trim() : current.position;
+      const newSal = salary !== undefined && !isNaN(Number(salary)) ? Number(salary) : current.salary;
+      const newStatus = status === 'Active' || status === 'On Leave' ? status : current.status;
+
+      await dbPool.execute(
+        'UPDATE employees SET name = ?, position = ?, status = ?, salary = ? WHERE id = ?',
+        [newName, newPos, newStatus, newSal, id]
+      );
+
+      return res.status(200).json({
+        success: true,
+        message: "Employee updated successfully in MySQL",
+        employee: { id: String(id), name: newName, position: newPos, status: newStatus, salary: newSal }
+      });
+    } catch (err) {
+      console.error('Database PUT error:', err);
+    }
+  }
+
+  // Memory fallback
+  const employee = memoryEmployees.find(emp => emp.id === String(id));
   if (!employee) {
-    return res.status(404).json({
-      success: false,
-      error: `Employee with ID ${id} not found.`
-    });
+    return res.status(404).json({ success: false, error: `Employee #${id} not found.` });
   }
 
   if (name && String(name).trim()) employee.name = String(name).trim();
@@ -176,64 +262,76 @@ app.put('/api/employees/:id', (req, res) => {
   if (salary !== undefined && !isNaN(Number(salary))) employee.salary = Number(salary);
   if (status && (status === 'Active' || status === 'On Leave')) employee.status = status;
 
-  res.status(200).json({
-    success: true,
-    message: "Employee updated successfully",
-    employee
-  });
+  res.status(200).json({ success: true, message: "Employee updated successfully", employee });
 });
 
 // [PUT] /api/employees/:id/status - Toggle employee's status (Active <-> On Leave)
-app.put('/api/employees/:id/status', (req, res) => {
+app.put('/api/employees/:id/status', async (req, res) => {
   const { id } = req.params;
-  const employee = employees.find(emp => emp.id === String(id));
 
-  if (!employee) {
-    return res.status(404).json({
-      success: false,
-      error: `Employee with ID ${id} not found.`
-    });
+  if (useDatabase && dbPool) {
+    try {
+      const [rows] = await dbPool.execute('SELECT * FROM employees WHERE id = ?', [id]);
+      if (rows.length === 0) {
+        return res.status(404).json({ success: false, error: `Employee #${id} not found.` });
+      }
+      const newStatus = rows[0].status === 'Active' ? 'On Leave' : 'Active';
+      await dbPool.execute('UPDATE employees SET status = ? WHERE id = ?', [newStatus, id]);
+
+      return res.status(200).json({
+        success: true,
+        message: `Status updated to ${newStatus}`,
+        employee: { ...rows[0], id: String(rows[0].id), status: newStatus, salary: Number(rows[0].salary) }
+      });
+    } catch (err) {
+      console.error('Database toggle status error:', err);
+    }
   }
 
-  // Toggle status
-  employee.status = employee.status === "Active" ? "On Leave" : "Active";
+  // Memory fallback
+  const employee = memoryEmployees.find(emp => emp.id === String(id));
+  if (!employee) {
+    return res.status(404).json({ success: false, error: `Employee #${id} not found.` });
+  }
 
-  res.status(200).json({
-    success: true,
-    message: `Status updated to ${employee.status}`,
-    employee
-  });
+  employee.status = employee.status === "Active" ? "On Leave" : "Active";
+  res.status(200).json({ success: true, message: `Status updated to ${employee.status}`, employee });
 });
 
-// [DELETE] /api/employees/:id - Remove employee from the system
-app.delete('/api/employees/:id', (req, res) => {
+// [DELETE] /api/employees/:id - Remove employee from database
+app.delete('/api/employees/:id', async (req, res) => {
   const { id } = req.params;
-  const index = employees.findIndex(emp => emp.id === String(id));
 
-  if (index === -1) {
-    return res.status(404).json({
-      success: false,
-      error: `Employee with ID ${id} not found.`
-    });
+  if (useDatabase && dbPool) {
+    try {
+      const [rows] = await dbPool.execute('SELECT * FROM employees WHERE id = ?', [id]);
+      if (rows.length === 0) {
+        return res.status(404).json({ success: false, error: `Employee #${id} not found.` });
+      }
+      await dbPool.execute('DELETE FROM employees WHERE id = ?', [id]);
+      return res.status(200).json({
+        success: true,
+        message: "Employee deleted successfully from MySQL",
+        deletedEmployee: rows[0]
+      });
+    } catch (err) {
+      console.error('Database DELETE error:', err);
+    }
   }
 
-  const deletedEmployee = employees.splice(index, 1)[0];
+  // Memory fallback
+  const index = memoryEmployees.findIndex(emp => emp.id === String(id));
+  if (index === -1) {
+    return res.status(404).json({ success: false, error: `Employee #${id} not found.` });
+  }
 
-  res.status(200).json({
-    success: true,
-    message: "Employee deleted successfully",
-    deletedEmployee
-  });
+  const deletedEmployee = memoryEmployees.splice(index, 1)[0];
+  res.status(200).json({ success: true, message: "Employee deleted successfully", deletedEmployee });
 });
 
 // ==========================================
 // Phase 2: K-Means Clustering Algorithm (k=3)
 // ==========================================
-
-/**
- * 1D K-Means Clustering algorithm for salaries
- * Groups salaries into 3 clusters (Tier 1, Tier 2, Tier 3)
- */
 function runKMeans1D(salaries, k = 3, maxIterations = 50) {
   if (!salaries || salaries.length === 0) {
     return [
@@ -245,7 +343,6 @@ function runKMeans1D(salaries, k = 3, maxIterations = 50) {
 
   const sorted = [...salaries].sort((a, b) => a - b);
 
-  // If there are fewer than k data points, pad gracefully
   if (sorted.length < k) {
     return [
       { group: "Tier 1", centroid: sorted[0] || 0, count: sorted[0] !== undefined ? 1 : 0 },
@@ -254,14 +351,12 @@ function runKMeans1D(salaries, k = 3, maxIterations = 50) {
     ];
   }
 
-  // Initialize 3 centroids spread across min, median, max
   let centroids = [
     sorted[0],
     sorted[Math.floor(sorted.length / 2)],
     sorted[sorted.length - 1]
   ];
 
-  // If all values are identical or duplicate centroids
   if (centroids[0] === centroids[1] || centroids[1] === centroids[2]) {
     const min = sorted[0];
     const max = sorted[sorted.length - 1];
@@ -269,11 +364,9 @@ function runKMeans1D(salaries, k = 3, maxIterations = 50) {
     centroids = [min, min + step, max];
   }
 
-  // Iterative refinement
   for (let iter = 0; iter < maxIterations; iter++) {
     const clusters = [[], [], []];
 
-    // Assignment step: assign each salary to nearest centroid
     for (const val of sorted) {
       let minDist = Infinity;
       let clusterIndex = 0;
@@ -287,7 +380,6 @@ function runKMeans1D(salaries, k = 3, maxIterations = 50) {
       clusters[clusterIndex].push(val);
     }
 
-    // Update step: recalculate centroids
     let converged = true;
     const newCentroids = [];
     for (let i = 0; i < k; i++) {
@@ -306,7 +398,6 @@ function runKMeans1D(salaries, k = 3, maxIterations = 50) {
     if (converged) break;
   }
 
-  // Final assignment to get counts and final centroids
   const finalClusters = [[], [], []];
   for (const val of sorted) {
     let minDist = Infinity;
@@ -321,7 +412,6 @@ function runKMeans1D(salaries, k = 3, maxIterations = 50) {
     finalClusters[clusterIndex].push(val);
   }
 
-  // Map to objects and sort by centroid ascending (Tier 1 < Tier 2 < Tier 3)
   const results = finalClusters.map((cluster, i) => {
     const count = cluster.length;
     const centroid = count > 0 
@@ -340,25 +430,22 @@ function runKMeans1D(salaries, k = 3, maxIterations = 50) {
 }
 
 // [GET] /api/employees/salary-clusters - K-Means Analytics
-app.get('/api/employees/salary-clusters', (req, res) => {
+app.get('/api/employees/salary-clusters', async (req, res) => {
   try {
-    // Extract only the salary values from all current employees
-    const salaries = employees
-      .map(emp => Number(emp.salary))
-      .filter(s => !isNaN(s) && s > 0);
+    let salaries = [];
+
+    if (useDatabase && dbPool) {
+      const [rows] = await dbPool.execute('SELECT salary FROM employees');
+      salaries = rows.map(r => Number(r.salary)).filter(s => !isNaN(s) && s > 0);
+    } else {
+      salaries = memoryEmployees.map(emp => Number(emp.salary)).filter(s => !isNaN(s) && s > 0);
+    }
 
     const clusters = runKMeans1D(salaries, 3);
-
-    res.status(200).json({
-      success: true,
-      clusters
-    });
+    res.status(200).json({ success: true, clusters });
   } catch (error) {
     console.error('K-Means clustering error:', error);
-    res.status(500).json({
-      success: false,
-      error: "Error processing salary clusters."
-    });
+    res.status(500).json({ success: false, error: "Error processing salary clusters." });
   }
 });
 
