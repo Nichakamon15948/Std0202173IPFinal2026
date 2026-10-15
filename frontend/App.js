@@ -38,6 +38,7 @@ export default function App() {
   const [isLoadingEmployees, setIsLoadingEmployees] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL'); // 'ALL' | 'Active' | 'On Leave'
+  const [sortBy, setSortBy] = useState('id'); // 'id' | 'salary-desc' | 'salary-asc' | 'name'
 
   // Add Employee Form States
   const [newName, setNewName] = useState('');
@@ -145,19 +146,34 @@ export default function App() {
     }
   };
 
-  // Filtered employees
-  const filteredEmployees = employees.filter(emp => {
-    if (statusFilter !== 'ALL' && emp.status !== statusFilter) return false;
-    if (!searchQuery.trim()) return true;
-    const q = searchQuery.toLowerCase().trim();
-    return (
-      (emp.name && emp.name.toLowerCase().includes(q)) ||
-      (emp.position && emp.position.toLowerCase().includes(q)) ||
-      (emp.status && emp.status.toLowerCase().includes(q)) ||
-      (emp.id && String(emp.id).toLowerCase().includes(q)) ||
-      String(emp.salary).includes(q)
-    );
-  });
+  // Filtered and Sorted employees
+  const filteredEmployees = employees
+    .filter(emp => {
+      if (statusFilter !== 'ALL' && emp.status !== statusFilter) return false;
+      if (!searchQuery.trim()) return true;
+      const q = searchQuery.toLowerCase().trim();
+      return (
+        (emp.name && emp.name.toLowerCase().includes(q)) ||
+        (emp.position && emp.position.toLowerCase().includes(q)) ||
+        (emp.status && emp.status.toLowerCase().includes(q)) ||
+        (emp.id && String(emp.id).toLowerCase().includes(q)) ||
+        String(emp.salary).includes(q)
+      );
+    })
+    .sort((a, b) => {
+      if (sortBy === 'salary-desc') return Number(b.salary) - Number(a.salary);
+      if (sortBy === 'salary-asc') return Number(a.salary) - Number(b.salary);
+      if (sortBy === 'name') return a.name.localeCompare(b.name);
+      return Number(a.id) - Number(b.id);
+    });
+
+  // Executive KPI Metrics (Live Computed from Database)
+  const totalStaff = employees.length;
+  const activeStaff = employees.filter(e => e.status === 'Active').length;
+  const onLeaveStaff = employees.filter(e => e.status === 'On Leave').length;
+  const totalPayroll = employees.reduce((sum, e) => sum + (Number(e.salary) || 0), 0);
+  const avgSalary = totalStaff > 0 ? Math.round(totalPayroll / totalStaff) : 0;
+  const activePercent = totalStaff > 0 ? Math.round((activeStaff / totalStaff) * 100) : 0;
 
   // ==========================================
   // 3. Add Employee (with 400 Bad Request handling)
@@ -595,6 +611,74 @@ export default function App() {
 
       <ScrollView style={styles.scrollContent} contentContainerStyle={{ paddingBottom: 60 }}>
         
+        {/* Executive KPI Stats Ribbon (Computed Realtime from Database) */}
+        <View style={styles.kpiContainer}>
+          {/* Card 1: Total Staff */}
+          <View style={styles.kpiCard}>
+            <View style={styles.kpiTop}>
+              <Text style={styles.kpiLabel}>TOTAL HEADCOUNT</Text>
+              <View style={[styles.kpiIconBadge, { backgroundColor: '#eff6ff' }]}>
+                <Text style={styles.kpiIconText}>👥</Text>
+              </View>
+            </View>
+            <Text style={styles.kpiValue}>{totalStaff} <Text style={styles.kpiUnit}>Staff</Text></Text>
+            <View style={styles.kpiFooter}>
+              <View style={[styles.kpiPill, { backgroundColor: '#f0fdf4' }]}>
+                <Text style={[styles.kpiPillText, { color: '#16a34a' }]}>● 100% active</Text>
+              </View>
+              <Text style={styles.kpiFootNote}>in database</Text>
+            </View>
+          </View>
+
+          {/* Card 2: Active Working */}
+          <View style={styles.kpiCard}>
+            <View style={styles.kpiTop}>
+              <Text style={styles.kpiLabel}>ACTIVE ROSTER</Text>
+              <View style={[styles.kpiIconBadge, { backgroundColor: '#f0fdf4' }]}>
+                <Text style={styles.kpiIconText}>🟢</Text>
+              </View>
+            </View>
+            <Text style={styles.kpiValue}>{activeStaff} <Text style={styles.kpiUnit}>Working</Text></Text>
+            <View style={styles.kpiFooter}>
+              <View style={[styles.kpiPill, { backgroundColor: '#dcfce7' }]}>
+                <Text style={[styles.kpiPillText, { color: '#15803d' }]}>{activePercent}% on duty</Text>
+              </View>
+              <Text style={styles.kpiFootNote}>operational rate</Text>
+            </View>
+          </View>
+
+          {/* Card 3: On Leave */}
+          <View style={styles.kpiCard}>
+            <View style={styles.kpiTop}>
+              <Text style={styles.kpiLabel}>ON LEAVE / REST</Text>
+              <View style={[styles.kpiIconBadge, { backgroundColor: '#fef3c7' }]}>
+                <Text style={styles.kpiIconText}>🟡</Text>
+              </View>
+            </View>
+            <Text style={styles.kpiValue}>{onLeaveStaff} <Text style={styles.kpiUnit}>Staff</Text></Text>
+            <View style={styles.kpiFooter}>
+              <View style={[styles.kpiPill, { backgroundColor: '#fef3c7' }]}>
+                <Text style={[styles.kpiPillText, { color: '#b45309' }]}>{totalStaff > 0 ? 100 - activePercent : 0}% absent</Text>
+              </View>
+              <Text style={styles.kpiFootNote}>coverage managed</Text>
+            </View>
+          </View>
+
+          {/* Card 4: Total Monthly Payroll */}
+          <View style={styles.kpiCard}>
+            <View style={styles.kpiTop}>
+              <Text style={styles.kpiLabel}>MONTHLY PAYROLL</Text>
+              <View style={[styles.kpiIconBadge, { backgroundColor: '#f5f3ff' }]}>
+                <Text style={styles.kpiIconText}>💰</Text>
+              </View>
+            </View>
+            <Text style={[styles.kpiValue, { color: '#1e3a8a' }]}>฿{formatMoney(totalPayroll)}</Text>
+            <View style={styles.kpiFooter}>
+              <Text style={styles.kpiSubCalc}>Avg: <Text style={{ fontWeight: '700', color: '#0f172a' }}>฿{formatMoney(avgSalary)}</Text> / staff</Text>
+            </View>
+          </View>
+        </View>
+
         {/* Phase 2: K-Means Analytics Section */}
         <View style={styles.analyticsSection}>
           <View style={styles.sectionHeaderRow}>
@@ -629,31 +713,76 @@ export default function App() {
               </Text>
             </View>
           ) : clusters ? (
-            <View style={styles.clustersRow}>
-              {clusters.map((tier, idx) => {
-                const theme = getTierTheme(tier.group);
-                return (
-                  <View key={idx} style={[styles.clusterCard, { borderTopColor: theme.accentColor }]}>
-                    <View style={styles.clusterCardTop}>
-                      <Text style={[styles.clusterTierName, { color: theme.accentColor }]}>{tier.group}</Text>
-                      <View style={[styles.tierTag, { backgroundColor: theme.badgeBg }]}>
-                        <Text style={[styles.tierTagText, { color: theme.badgeText }]}>{theme.label}</Text>
+            <View>
+              <View style={styles.clustersRow}>
+                {clusters.map((tier, idx) => {
+                  const theme = getTierTheme(tier.group);
+                  return (
+                    <View key={idx} style={[styles.clusterCard, { borderTopColor: theme.accentColor }]}>
+                      <View style={styles.clusterCardTop}>
+                        <Text style={[styles.clusterTierName, { color: theme.accentColor }]}>{tier.group}</Text>
+                        <View style={[styles.tierTag, { backgroundColor: theme.badgeBg }]}>
+                          <Text style={[styles.tierTagText, { color: theme.badgeText }]}>{theme.label}</Text>
+                        </View>
+                      </View>
+                      
+                      <Text style={styles.clusterCentroid}>
+                        ฿{formatMoney(tier.centroid)}
+                      </Text>
+                      <Text style={styles.clusterSubtitle}>Average Base Salary</Text>
+
+                      <View style={styles.clusterFooter}>
+                        <Text style={styles.clusterFooterText}>
+                          Total Staff: <Text style={{ fontWeight: '700', color: '#0f172a' }}>{tier.count}</Text> employee(s)
+                        </Text>
                       </View>
                     </View>
-                    
-                    <Text style={styles.clusterCentroid}>
-                      ฿{formatMoney(tier.centroid)}
-                    </Text>
-                    <Text style={styles.clusterSubtitle}>Average Base Salary</Text>
+                  );
+                })}
+              </View>
 
-                    <View style={styles.clusterFooter}>
-                      <Text style={styles.clusterFooterText}>
-                        Total Staff: <Text style={{ fontWeight: '700', color: '#0f172a' }}>{tier.count}</Text> employee(s)
-                      </Text>
-                    </View>
-                  </View>
-                );
-              })}
+              {/* Visual Proportion Breakdown Bar */}
+              <View style={styles.distributionContainer}>
+                <View style={styles.distribHeader}>
+                  <Text style={styles.distribTitle}>PAYROLL WORKFORCE DISTRIBUTION</Text>
+                  <Text style={styles.distribSubtitle}>3-Tier Staffing Share via K-Means</Text>
+                </View>
+
+                <View style={styles.distribBarWrapper}>
+                  {clusters.map((tier, idx) => {
+                    const theme = getTierTheme(tier.group);
+                    const pct = totalStaff > 0 ? Math.round((tier.count / totalStaff) * 100) : 33;
+                    return (
+                      <View
+                        key={idx}
+                        style={[
+                          styles.distribSegment,
+                          {
+                            flex: tier.count || 1,
+                            backgroundColor: theme.accentColor
+                          }
+                        ]}
+                      >
+                        <Text style={styles.distribSegmentText}>{tier.group} ({pct}%)</Text>
+                      </View>
+                    );
+                  })}
+                </View>
+
+                <View style={styles.distribLegendRow}>
+                  {clusters.map((tier, idx) => {
+                    const theme = getTierTheme(tier.group);
+                    return (
+                      <View key={idx} style={styles.legendItem}>
+                        <View style={[styles.legendDot, { backgroundColor: theme.accentColor }]} />
+                        <Text style={styles.legendText}>
+                          {tier.group}: <Text style={{ fontWeight: '700', color: '#0f172a' }}>{tier.count} staff</Text> (avg ฿{formatMoney(tier.centroid)})
+                        </Text>
+                      </View>
+                    );
+                  })}
+                </View>
+              </View>
             </View>
           ) : (
             <View style={styles.analyticsPlaceholder}>
@@ -802,6 +931,35 @@ export default function App() {
                 </Text>
               </TouchableOpacity>
             </View>
+          </View>
+
+          {/* Quick Sort Bar */}
+          <View style={styles.sortControlsRow}>
+            <Text style={styles.sortLabel}>SORT BY:</Text>
+            <TouchableOpacity
+              style={[styles.sortPillBtn, sortBy === 'id' && styles.sortPillBtnActive]}
+              onPress={() => setSortBy('id')}
+            >
+              <Text style={[styles.sortPillText, sortBy === 'id' && styles.sortPillTextActive]}>ID</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.sortPillBtn, sortBy === 'salary-desc' && styles.sortPillBtnActive]}
+              onPress={() => setSortBy('salary-desc')}
+            >
+              <Text style={[styles.sortPillText, sortBy === 'salary-desc' && styles.sortPillTextActive]}>Salary ⬇</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.sortPillBtn, sortBy === 'salary-asc' && styles.sortPillBtnActive]}
+              onPress={() => setSortBy('salary-asc')}
+            >
+              <Text style={[styles.sortPillText, sortBy === 'salary-asc' && styles.sortPillTextActive]}>Salary ⬆</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.sortPillBtn, sortBy === 'name' && styles.sortPillBtnActive]}
+              onPress={() => setSortBy('name')}
+            >
+              <Text style={[styles.sortPillText, sortBy === 'name' && styles.sortPillTextActive]}>Name A-Z</Text>
+            </TouchableOpacity>
           </View>
 
           {/* Employee Cards List */}
@@ -1951,5 +2109,178 @@ const styles = StyleSheet.create({
   },
   pulseDotInactive: {
     backgroundColor: '#94a3b8'
+  },
+
+  // Executive KPI Styles
+  kpiContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 14,
+    marginBottom: 20
+  },
+  kpiCard: {
+    flex: 1,
+    minWidth: 200,
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    shadowColor: '#0f172a',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2
+  },
+  kpiTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8
+  },
+  kpiLabel: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#64748b',
+    letterSpacing: 0.8
+  },
+  kpiIconBadge: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  kpiIconText: {
+    fontSize: 13
+  },
+  kpiValue: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#0f172a',
+    marginBottom: 6
+  },
+  kpiUnit: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#64748b'
+  },
+  kpiFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6
+  },
+  kpiPill: {
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 10
+  },
+  kpiPillText: {
+    fontSize: 10,
+    fontWeight: '700'
+  },
+  kpiFootNote: {
+    fontSize: 11,
+    color: '#94a3b8'
+  },
+  kpiSubCalc: {
+    fontSize: 11,
+    color: '#64748b'
+  },
+
+  // Distribution Bar Styles
+  distributionContainer: {
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    marginTop: 14
+  },
+  distribHeader: {
+    marginBottom: 10
+  },
+  distribTitle: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#0f172a',
+    letterSpacing: 0.6
+  },
+  distribSubtitle: {
+    fontSize: 11,
+    color: '#64748b'
+  },
+  distribBarWrapper: {
+    height: 22,
+    borderRadius: 11,
+    flexDirection: 'row',
+    overflow: 'hidden',
+    backgroundColor: '#e2e8f0',
+    marginBottom: 12
+  },
+  distribSegment: {
+    height: '100%',
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  distribSegmentText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#ffffff'
+  },
+  distribLegendRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 16
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6
+  },
+  legendDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4
+  },
+  legendText: {
+    fontSize: 11,
+    color: '#475569'
+  },
+
+  // Sort Controls Styles
+  sortControlsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 12,
+    paddingBottom: 4
+  },
+  sortLabel: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#64748b',
+    letterSpacing: 0.5
+  },
+  sortPillBtn: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 16,
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#e2e8f0'
+  },
+  sortPillBtnActive: {
+    backgroundColor: '#1e40af',
+    borderColor: '#1e40af'
+  },
+  sortPillText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#475569'
+  },
+  sortPillTextActive: {
+    color: '#ffffff',
+    fontWeight: '700'
   }
 });
