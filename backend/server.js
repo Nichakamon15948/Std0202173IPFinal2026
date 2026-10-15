@@ -3,7 +3,8 @@ const cors = require('cors');
 const mysql = require('mysql2/promise');
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+// Default port 3018 for University VPS (or environment PORT)
+const PORT = process.env.PORT || 3018;
 
 // Middleware
 app.use(cors());
@@ -25,57 +26,76 @@ let memoryEmployees = [
 let nextMemoryId = 9;
 
 // ==========================================
-// MySQL Database Pool Setup with NicTap_ Fields
+// MySQL Database Pool Setup (Supports both VPS Cloud and Local XAMPP)
 // ==========================================
 let dbPool = null;
 let useDatabase = false;
 
 async function initDatabase() {
-  try {
-    const pool = mysql.createPool({
+  const configsToTry = [
+    // 1. VPS Cloud Configuration (University VPS)
+    {
       host: process.env.DB_HOST || '127.0.0.1',
-      user: process.env.DB_USER || 'root',
-      password: process.env.DB_PASSWORD || '',
-      database: process.env.DB_NAME || 'ip_std6730202173',
-      waitForConnections: true,
-      connectionLimit: 10,
-      queueLimit: 0,
-      connectTimeout: 3000
-    });
-
-    const conn = await pool.getConnection();
-    console.log('Connected to MySQL Database (ip_std6730202173) successfully!');
-
-    // Ensure table with NicTap_ fields exists
-    await conn.execute(`
-      CREATE TABLE IF NOT EXISTS NicTap_employees (
-        NicTap_id INT AUTO_INCREMENT PRIMARY KEY,
-        NicTap_name VARCHAR(255) NOT NULL,
-        NicTap_position VARCHAR(255) NOT NULL,
-        NicTap_status VARCHAR(50) DEFAULT 'Active',
-        NicTap_salary INT NOT NULL
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-    `);
-
-    // Ensure initial rows exist
-    const [rows] = await conn.execute('SELECT COUNT(*) as count FROM NicTap_employees');
-    if (rows[0].count === 0) {
-      for (const emp of memoryEmployees) {
-        await conn.execute(
-          'INSERT INTO NicTap_employees (NicTap_name, NicTap_position, NicTap_status, NicTap_salary) VALUES (?, ?, ?, ?)',
-          [emp.name, emp.position, emp.status, emp.salary]
-        );
-      }
-      console.log('Seeded NicTap_employees table in MySQL!');
+      user: process.env.DB_USER || 'std6730202173',
+      password: process.env.DB_PASSWORD || 'M3@zWq7L',
+      database: process.env.DB_NAME || 'ip_std6730202173'
+    },
+    // 2. Local XAMPP Configuration (root with no password)
+    {
+      host: '127.0.0.1',
+      user: 'root',
+      password: '',
+      database: 'ip_std6730202173'
     }
+  ];
 
-    conn.release();
-    dbPool = pool;
-    useDatabase = true;
-  } catch (error) {
-    console.warn('MySQL not available, running in In-Memory mode:', error.message);
-    useDatabase = false;
+  for (const cfg of configsToTry) {
+    try {
+      const pool = mysql.createPool({
+        ...cfg,
+        waitForConnections: true,
+        connectionLimit: 10,
+        queueLimit: 0,
+        connectTimeout: 3000
+      });
+
+      const conn = await pool.getConnection();
+      console.log(`Connected to MySQL (${cfg.database}) via user "${cfg.user}" successfully!`);
+
+      // Ensure table with NicTap_ fields exists
+      await conn.execute(`
+        CREATE TABLE IF NOT EXISTS NicTap_employees (
+          NicTap_id INT AUTO_INCREMENT PRIMARY KEY,
+          NicTap_name VARCHAR(255) NOT NULL,
+          NicTap_position VARCHAR(255) NOT NULL,
+          NicTap_status VARCHAR(50) DEFAULT 'Active',
+          NicTap_salary INT NOT NULL
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+      `);
+
+      // Ensure initial rows exist
+      const [rows] = await conn.execute('SELECT COUNT(*) as count FROM NicTap_employees');
+      if (rows[0].count === 0) {
+        for (const emp of memoryEmployees) {
+          await conn.execute(
+            'INSERT INTO NicTap_employees (NicTap_name, NicTap_position, NicTap_status, NicTap_salary) VALUES (?, ?, ?, ?)',
+            [emp.name, emp.position, emp.status, emp.salary]
+          );
+        }
+        console.log('Seeded NicTap_employees table in MySQL!');
+      }
+
+      conn.release();
+      dbPool = pool;
+      useDatabase = true;
+      return;
+    } catch (err) {
+      // try next config
+    }
   }
+
+  console.warn('MySQL not reachable on current host, running in In-Memory mode.');
+  useDatabase = false;
 }
 
 initDatabase();
