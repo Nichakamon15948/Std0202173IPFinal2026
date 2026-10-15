@@ -1,0 +1,12 @@
+{
+  "expo": {
+    "name": "HR Manager & Salary Analytics",
+    "slug": "hr-manager-salary-analytics",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "web": {
+      "bundler": "metro"
+    }
+  }
+}
