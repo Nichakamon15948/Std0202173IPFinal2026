@@ -4,7 +4,7 @@
 **Student ID:** 6730202173  
 **Subject:** Internet Programming (Final Exam 2026)  
 **Topic:** HR Manager & Salary Analytics System  
-**GitHub Repository:** [https://github.com/Nichakamon15948/Std6730202173IPFinal2026](https://github.com/Nichakamon15948/Std6730202173IPFinal2026)
+**GitHub Repository:** [https://github.com/Nichakamon15948/Std0202173IPFinal2026](https://github.com/Nichakamon15948/Std0202173IPFinal2026)
 
 ---
 
