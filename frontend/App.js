@@ -131,16 +131,18 @@ export default function App() {
       (emp.name && emp.name.toLowerCase().includes(q)) ||
       (emp.position && emp.position.toLowerCase().includes(q)) ||
       (emp.status && emp.status.toLowerCase().includes(q)) ||
+      (emp.id && String(emp.id).toLowerCase().includes(q)) ||
       String(emp.salary).includes(q)
     );
   });
 
   // ==========================================
-  // 3. Add Employee
+  // 3. Add Employee (with 400 Bad Request handling)
   // ==========================================
   const handleAddEmployee = async () => {
+    // Client-side validation: prevent submission if fields are empty
     if (!newName.trim() || !newPosition.trim() || !newSalary.trim()) {
-      showAlert('Validation Error', 'Please fill in all fields (Name, Position, Salary).');
+      showAlert('Validation Error (Client-side)', 'All fields (Name, Position, Salary) are required!');
       return;
     }
 
@@ -164,12 +166,17 @@ export default function App() {
 
       const data = await response.json();
 
+      if (response.status === 400) {
+        showAlert('HTTP 400 Bad Request', data.error || 'Invalid employee data submitted.');
+        return;
+      }
+
       if (response.ok && data.success) {
         setNewName('');
         setNewPosition('');
         setNewSalary('');
         fetchEmployees();
-        showAlert('Success', `Employee "${data.employee?.name || 'New'}" added successfully!`);
+        showAlert('Success', `Employee added successfully with ID #${data.employee?.id}!`);
       } else {
         showAlert('Failed to Add', data.error || 'Server rejected the request.');
       }
@@ -352,7 +359,6 @@ export default function App() {
     return name.slice(0, 2).toUpperCase();
   };
 
-  // Corporate Tier theme
   const getTierTheme = (tierName) => {
     if (tierName === 'Tier 1') {
       return {
@@ -389,7 +395,6 @@ export default function App() {
       <SafeAreaView style={styles.loginContainer}>
         <StatusBar barStyle="dark-content" />
         <View style={styles.loginCard}>
-          {/* Company Brand Logo */}
           <View style={styles.loginHeader}>
             <View style={styles.logoBadge}>
               <Text style={styles.logoBadgeText}>HR</Text>
@@ -406,7 +411,6 @@ export default function App() {
             </View>
           </View>
 
-          {/* Username */}
           <View style={styles.inputGroup}>
             <Text style={styles.inputLabel}>USERNAME</Text>
             <TextInput
@@ -419,7 +423,6 @@ export default function App() {
             />
           </View>
 
-          {/* Password */}
           <View style={styles.inputGroup}>
             <Text style={styles.inputLabel}>PASSWORD</Text>
             <View style={styles.passwordWrapper}>
@@ -441,12 +444,10 @@ export default function App() {
             </View>
           </View>
 
-          {/* Auto fill helper */}
           <TouchableOpacity style={styles.autoFillButton} onPress={handleAutoFill}>
             <Text style={styles.autoFillText}>⚡ Click to auto-fill credentials (admin / 123)</Text>
           </TouchableOpacity>
 
-          {/* Login Button */}
           <TouchableOpacity
             style={[styles.primaryButton, isLoggingIn && styles.buttonDisabled]}
             onPress={handleLogin}
@@ -459,7 +460,6 @@ export default function App() {
             )}
           </TouchableOpacity>
 
-          {/* Info Footer */}
           <View style={styles.hintBox}>
             <Text style={styles.hintText}>
               System default: <Text style={{ fontWeight: '700' }}>admin</Text> / <Text style={{ fontWeight: '700' }}>123</Text> (or password123)
@@ -658,7 +658,7 @@ export default function App() {
               <Text style={styles.searchIcon}>🔍</Text>
               <TextInput
                 style={styles.searchInput}
-                placeholder="Search by name, position, or status..."
+                placeholder="Search by name, position, ID, or status..."
                 placeholderTextColor="#94a3b8"
                 value={searchQuery}
                 onChangeText={setSearchQuery}
@@ -732,7 +732,13 @@ export default function App() {
 
                     <View style={styles.employeeInfo}>
                       <View style={styles.nameRow}>
+                        {/* ID Badge displayed clearly */}
+                        <View style={styles.idBadge}>
+                          <Text style={styles.idBadgeText}>#{emp.id}</Text>
+                        </View>
+
                         <Text style={styles.employeeName}>{emp.name}</Text>
+
                         {isOwner && (
                           <View style={styles.ownerBadge}>
                             <Text style={styles.ownerBadgeText}>★ Student Admin</Text>
@@ -814,7 +820,7 @@ export default function App() {
             <View style={styles.modalHeader}>
               <View>
                 <Text style={styles.modalTitle}>Edit Employee Record</Text>
-                <Text style={styles.modalSubtitle}>System ID: #{editingEmployee?.id}</Text>
+                <Text style={styles.modalSubtitle}>Employee ID: #{editingEmployee?.id}</Text>
               </View>
               <TouchableOpacity onPress={closeEditModal} style={styles.modalCloseIcon}>
                 <Text style={{ color: '#64748b', fontSize: 18, fontWeight: 'bold' }}>✕</Text>
@@ -913,7 +919,7 @@ export default function App() {
 }
 
 // ==========================================
-// REAL ENTERPRISE HR PORTAL STYLES (Clean, Modern & Trustworthy)
+// REAL ENTERPRISE HR PORTAL STYLES
 // ==========================================
 const styles = StyleSheet.create({
   // Clean Login Styles
@@ -1072,7 +1078,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f8fafc'
   },
   headerBar: {
-    backgroundColor: '#0f172a', // Deep Executive Navy
+    backgroundColor: '#0f172a',
     paddingHorizontal: 24,
     paddingVertical: 16,
     flexDirection: 'row',
@@ -1317,7 +1323,7 @@ const styles = StyleSheet.create({
     fontWeight: '600'
   },
   addEmployeeButton: {
-    backgroundColor: '#15803d', // Corporate Forest Green
+    backgroundColor: '#15803d',
     borderRadius: 6,
     paddingVertical: 11,
     alignItems: 'center'
@@ -1462,9 +1468,9 @@ const styles = StyleSheet.create({
     minWidth: 260
   },
   avatarCircle: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: '#f1f5f9',
     justifyContent: 'center',
     alignItems: 'center',
@@ -1491,6 +1497,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
     flexWrap: 'wrap'
+  },
+  // Distinct ID Badge
+  idBadge: {
+    backgroundColor: '#f1f5f9',
+    borderWidth: 1,
+    borderColor: '#cbd5e1',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4
+  },
+  idBadgeText: {
+    color: '#475569',
+    fontSize: 11,
+    fontWeight: '800',
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace'
   },
   employeeName: {
     color: '#0f172a',
