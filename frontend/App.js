@@ -14,9 +14,15 @@ import {
   Modal
 } from 'react-native';
 
-const API_BASE_URL = 'http://localhost:5000/api';
+export const LOCAL_API_URL = 'http://localhost:5000/api';
+export const CLOUD_API_URL = 'http://119.59.102.161:3018/api';
 
 export default function App() {
+  // Dual-mode Server Routing: Supports both Localhost (Port 5000) and Cloud VPS (Port 3018)
+  const [serverMode, setServerMode] = useState('cloud'); // 'cloud' | 'local'
+  const [apiBaseUrl, setApiBaseUrl] = useState(CLOUD_API_URL);
+  const [isDetectingServer, setIsDetectingServer] = useState(true);
+
   // Navigation State
   const [currentScreen, setCurrentScreen] = useState('login');
   const [authToken, setAuthToken] = useState(null);
@@ -51,11 +57,49 @@ export default function App() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [clusters, setClusters] = useState(null);
 
+  // Auto-probe on startup: Checks if local server (5000) is running, otherwise defaults to Cloud VPS (3018)
+  useEffect(() => {
+    let isMounted = true;
+    const probeServer = async () => {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 1200);
+        const res = await fetch(`${LOCAL_API_URL}/employees`, { signal: controller.signal });
+        clearTimeout(timeoutId);
+        if (res.ok && isMounted) {
+          setApiBaseUrl(LOCAL_API_URL);
+          setServerMode('local');
+          setIsDetectingServer(false);
+          return;
+        }
+      } catch (e) {
+        // Localhost not available, smoothly fall back to Cloud VPS
+      }
+      if (isMounted) {
+        setApiBaseUrl(CLOUD_API_URL);
+        setServerMode('cloud');
+        setIsDetectingServer(false);
+      }
+    };
+    probeServer();
+    return () => { isMounted = false; };
+  }, []);
+
+  const switchServerMode = (mode) => {
+    if (mode === 'cloud') {
+      setServerMode('cloud');
+      setApiBaseUrl(CLOUD_API_URL);
+    } else {
+      setServerMode('local');
+      setApiBaseUrl(LOCAL_API_URL);
+    }
+  };
+
   useEffect(() => {
     if (currentScreen === 'dashboard') {
       fetchEmployees();
     }
-  }, [currentScreen]);
+  }, [currentScreen, apiBaseUrl]);
 
   const handleAutoFill = () => {
     setUsername('admin');
@@ -73,7 +117,7 @@ export default function App() {
 
     setIsLoggingIn(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/login`, {
+      const response = await fetch(`${apiBaseUrl}/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username: username.trim(), password: password.trim() })
@@ -91,7 +135,7 @@ export default function App() {
       }
     } catch (error) {
       console.error('Login request error:', error);
-      showAlert('Connection Error', 'Cannot connect to backend server on port 5000.');
+      showAlert('Connection Error', `Cannot connect to backend server at ${apiBaseUrl}. Please ensure the server is running.`);
     } finally {
       setIsLoggingIn(false);
     }
@@ -109,7 +153,7 @@ export default function App() {
   const fetchEmployees = async () => {
     setIsLoadingEmployees(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/employees`);
+      const response = await fetch(`${apiBaseUrl}/employees`);
       const data = await response.json();
       if (Array.isArray(data)) {
         setEmployees(data);
@@ -154,7 +198,7 @@ export default function App() {
 
     setIsAdding(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/employees`, {
+      const response = await fetch(`${apiBaseUrl}/employees`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -221,7 +265,7 @@ export default function App() {
 
     setIsSavingEdit(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/employees/${editingEmployee.id}`, {
+      const response = await fetch(`${apiBaseUrl}/employees/${editingEmployee.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -256,7 +300,7 @@ export default function App() {
   // ==========================================
   const handleToggleStatus = async (id) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/employees/${id}/status`, {
+      const response = await fetch(`${apiBaseUrl}/employees/${id}/status`, {
         method: 'PUT'
       });
       const data = await response.json();
@@ -297,7 +341,7 @@ export default function App() {
 
   const executeDelete = async (id) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/employees/${id}`, {
+      const response = await fetch(`${apiBaseUrl}/employees/${id}`, {
         method: 'DELETE'
       });
       const data = await response.json();
@@ -324,7 +368,7 @@ export default function App() {
       // หน่วงเวลาเล็กน้อย 0.6 วินาที เพื่อให้เห็น Loading Indicator ชัดเจนตามเกณฑ์ข้อสอบ (15 คะแนน)
       await new Promise(resolve => setTimeout(resolve, 600));
 
-      const response = await fetch(`${API_BASE_URL}/employees/salary-clusters`);
+      const response = await fetch(`${apiBaseUrl}/employees/salary-clusters`);
       const data = await response.json();
 
       if (response.ok && data.success) {
@@ -412,6 +456,38 @@ export default function App() {
                 Student: <Text style={{ fontWeight: '700', color: '#1e3a8a' }}>Nichakamon (6730202173)</Text>
               </Text>
             </View>
+
+            {/* Server Mode Switcher */}
+            <View style={styles.loginServerBox}>
+              <Text style={styles.loginServerTitle}>TARGET BACKEND SERVER</Text>
+              <View style={styles.serverBtnGroup}>
+                <TouchableOpacity
+                  style={[
+                    styles.serverPillBtn,
+                    serverMode === 'local' && styles.serverPillBtnActive
+                  ]}
+                  onPress={() => switchServerMode('local')}
+                >
+                  <View style={[styles.pulseDot, serverMode === 'local' ? styles.pulseDotActive : styles.pulseDotInactive]} />
+                  <Text style={[styles.serverPillText, serverMode === 'local' && styles.serverPillTextActive]}>
+                    💻 Local (:5000)
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.serverPillBtn,
+                    serverMode === 'cloud' && styles.serverPillBtnActive
+                  ]}
+                  onPress={() => switchServerMode('cloud')}
+                >
+                  <View style={[styles.pulseDot, serverMode === 'cloud' ? styles.pulseDotActive : styles.pulseDotInactive]} />
+                  <Text style={[styles.serverPillText, serverMode === 'cloud' && styles.serverPillTextActive]}>
+                    🌐 Cloud VPS (:3018)
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
           </View>
 
           <View style={styles.inputGroup}>
@@ -467,7 +543,7 @@ export default function App() {
             <Text style={styles.hintText}>
               System default: <Text style={{ fontWeight: '700' }}>admin</Text> / <Text style={{ fontWeight: '700' }}>123</Text> (or password123)
             </Text>
-            <Text style={styles.hintSub}>Backend API: http://localhost:5000/api</Text>
+            <Text style={styles.hintSub}>Target API: {apiBaseUrl}</Text>
           </View>
         </View>
       </SafeAreaView>
@@ -498,6 +574,41 @@ export default function App() {
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
           <Text style={styles.logoutButtonText}>Sign Out</Text>
         </TouchableOpacity>
+      </View>
+
+      {/* Target Server Switcher Bar */}
+      <View style={styles.dashboardServerBar}>
+        <View style={styles.dashboardServerLeft}>
+          <Text style={styles.dashboardServerLabel}>API TARGET:</Text>
+          <Text style={styles.dashboardServerUrl}>{apiBaseUrl}</Text>
+        </View>
+        <View style={styles.serverBtnGroup}>
+          <TouchableOpacity
+            style={[
+              styles.serverPillBtnSmall,
+              serverMode === 'local' && styles.serverPillBtnActive
+            ]}
+            onPress={() => switchServerMode('local')}
+          >
+            <View style={[styles.pulseDot, serverMode === 'local' ? styles.pulseDotActive : styles.pulseDotInactive]} />
+            <Text style={[styles.serverPillTextSmall, serverMode === 'local' && styles.serverPillTextActive]}>
+              💻 Local (:5000)
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.serverPillBtnSmall,
+              serverMode === 'cloud' && styles.serverPillBtnActive
+            ]}
+            onPress={() => switchServerMode('cloud')}
+          >
+            <View style={[styles.pulseDot, serverMode === 'cloud' ? styles.pulseDotActive : styles.pulseDotInactive]} />
+            <Text style={[styles.serverPillTextSmall, serverMode === 'cloud' && styles.serverPillTextActive]}>
+              🌐 Cloud VPS (:3018)
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView style={styles.scrollContent} contentContainerStyle={{ paddingBottom: 60 }}>
@@ -1749,5 +1860,109 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 13,
     fontWeight: '700'
+  },
+  // Dual-mode Server Routing Styles
+  loginServerBox: {
+    marginTop: 14,
+    marginBottom: 4,
+    backgroundColor: '#f8fafc',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    padding: 10,
+    alignItems: 'center',
+    width: '100%'
+  },
+  loginServerTitle: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#64748b',
+    letterSpacing: 0.6,
+    marginBottom: 8
+  },
+  serverBtnGroup: {
+    flexDirection: 'row',
+    gap: 8,
+    alignItems: 'center'
+  },
+  serverPillBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 20,
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#cbd5e1'
+  },
+  serverPillBtnActive: {
+    backgroundColor: '#eff6ff',
+    borderColor: '#3b82f6'
+  },
+  serverPillText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#64748b'
+  },
+  serverPillTextActive: {
+    color: '#1d4ed8',
+    fontWeight: '700'
+  },
+  serverPillBtnSmall: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)'
+  },
+  serverPillTextSmall: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#cbd5e1'
+  },
+  dashboardServerBar: {
+    backgroundColor: '#0f172a',
+    borderBottomWidth: 1,
+    borderBottomColor: '#334155',
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    gap: 10
+  },
+  dashboardServerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8
+  },
+  dashboardServerLabel: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#94a3b8',
+    letterSpacing: 0.5
+  },
+  dashboardServerUrl: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#38bdf8',
+    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace'
+  },
+  pulseDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4
+  },
+  pulseDotActive: {
+    backgroundColor: '#22c55e'
+  },
+  pulseDotInactive: {
+    backgroundColor: '#94a3b8'
   }
 });
