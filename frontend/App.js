@@ -57,32 +57,11 @@ export default function App() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [clusters, setClusters] = useState(null);
 
-  // Auto-probe on startup: Checks if local server (5000) is running, otherwise defaults to Cloud VPS (3018)
+  // Default to Cloud VPS (119.59.102.161:3018) so all FE Add/Edit/Delete directly update Cloud Database (ip_std6730202173)
   useEffect(() => {
-    let isMounted = true;
-    const probeServer = async () => {
-      try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 1200);
-        const res = await fetch(`${LOCAL_API_URL}/employees`, { signal: controller.signal });
-        clearTimeout(timeoutId);
-        if (res.ok && isMounted) {
-          setApiBaseUrl(LOCAL_API_URL);
-          setServerMode('local');
-          setIsDetectingServer(false);
-          return;
-        }
-      } catch (e) {
-        // Localhost not available, smoothly fall back to Cloud VPS
-      }
-      if (isMounted) {
-        setApiBaseUrl(CLOUD_API_URL);
-        setServerMode('cloud');
-        setIsDetectingServer(false);
-      }
-    };
-    probeServer();
-    return () => { isMounted = false; };
+    setApiBaseUrl(CLOUD_API_URL);
+    setServerMode('cloud');
+    setIsDetectingServer(false);
   }, []);
 
   const switchServerMode = (mode) => {
@@ -579,8 +558,11 @@ export default function App() {
       {/* Target Server Switcher Bar */}
       <View style={styles.dashboardServerBar}>
         <View style={styles.dashboardServerLeft}>
-          <Text style={styles.dashboardServerLabel}>API TARGET:</Text>
-          <Text style={styles.dashboardServerUrl}>{apiBaseUrl}</Text>
+          <Text style={styles.dashboardServerLabel}>DATABASE:</Text>
+          <Text style={styles.dashboardServerDbBadge}>
+            {serverMode === 'cloud' ? '☁️ Cloud MySQL (ip_std6730202173)' : '💻 Local DB'}
+          </Text>
+          <Text style={styles.dashboardServerUrl}>[{apiBaseUrl}]</Text>
         </View>
         <View style={styles.serverBtnGroup}>
           <TouchableOpacity
@@ -1947,6 +1929,11 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#94a3b8',
     letterSpacing: 0.5
+  },
+  dashboardServerDbBadge: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#34d399'
   },
   dashboardServerUrl: {
     fontSize: 12,
