@@ -4,8 +4,8 @@ const cors = require('cors');
 const mysql = require('mysql2/promise');
 
 const app = express();
-// Default port 3018 for University VPS (or environment PORT)
-const PORT = process.env.PORT || 3018;
+// Default port 5000 to match frontend API_BASE_URL (or environment PORT)
+const PORT = process.env.PORT || 5000;
 
 // Middleware
 app.use(cors());
